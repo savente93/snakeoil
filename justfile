@@ -33,6 +33,12 @@ build-release:
 doc:
     cargo doc --no-deps --all-features --workspace
 
+open-doc:
+    cargo doc --no-deps --all-features --workspace --open
+
+cov:
+    cargo llvm-cov --locked --all-features  --open
+
 # Clean the target directory
 clean:
     cargo clean
