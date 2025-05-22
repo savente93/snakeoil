@@ -30,7 +30,7 @@ pub fn is_python_package(path: &Path) -> Result<bool> {
 /// # use color_eyre::Result;
 /// # use assert_fs::prelude::*;
 /// # fn foo() -> Result<()> {
-///   let temp_dir = assert_fs::TempDir::new().unwrap();
+///   let temp_dir = assert_fs::TempDir::new()?;
 ///   let path = temp_dir.child("foo.py");
 ///   path.touch()?;
 ///   assert_eq!(get_module_name(&path)?, String::from("test"));
@@ -41,19 +41,6 @@ pub fn is_python_package(path: &Path) -> Result<bool> {
 /// # Errors
 /// returns an error if there is any `fs` error or
 /// if the provided directory is not a python module
-/// ```
-/// # use snakeoil::fs::get_module_name;
-/// # use color_eyre::Result;
-/// # use std::fs::create_dir;
-/// # fn foo() -> Result<()> {
-///   let temp_dir = assert_fs::TempDir::new().unwrap();
-///   let module_dir = temp_dir.join("test");
-///   create_dir(&module_dir)?;
-///
-///   assert!(get_module_name(&module_dir).is_err());
-/// # Ok(())
-/// # }
-/// ```
 pub fn get_module_name(path: &Path) -> Result<String> {
     if is_python_module(path)? {
         let name: Result<String> = path
@@ -77,7 +64,7 @@ pub fn get_module_name(path: &Path) -> Result<String> {
 /// # use color_eyre::Result;
 /// # use assert_fs::prelude::*;
 /// # fn foo() -> Result<()> {
-///   let temp_dir = assert_fs::TempDir::new().unwrap();
+///   let temp_dir = assert_fs::TempDir::new()?;
 ///   let pkg_path = temp_dir.join("test");
 ///   create_empty_python_package_on_disk(&temp_dir.join("test"));
 ///   assert_eq!(get_package_name(&temp_dir.join("test"))?, String::from("test"));
@@ -87,19 +74,6 @@ pub fn get_module_name(path: &Path) -> Result<String> {
 /// # Errors
 /// returns an error if there is any `fs` error or
 /// if the provided directory is not a python package
-/// ```
-/// # use snakeoil::fs::{get_package_name, create_empty_python_package_on_disk};
-/// # use color_eyre::Result;
-/// # use assert_fs::prelude::*;
-/// # use std::fs::File;
-/// # fn foo() -> Result<()> {
-///   let temp_dir = assert_fs::TempDir::new().unwrap();
-///   let pkg_path = temp_dir.join("foo.py");
-///   let _ = File::create(&pkg_path)?;
-///   assert!(get_package_name(&pkg_path).is_err());
-/// # Ok(())
-/// # }
-/// ```
 pub fn get_package_name(path: &Path) -> Result<String> {
     if is_python_package(path)? {
         let name: Result<String> = path
@@ -137,7 +111,7 @@ pub fn create_empty_python_package_on_disk(root: &Path) -> Result<()> {
 /// # use assert_fs::prelude::*;
 /// # use std::fs::File;
 /// # fn foo() -> Result<()> {
-///   let temp_dir = assert_fs::TempDir::new().unwrap();
+///   let temp_dir = assert_fs::TempDir::new()?;
 ///   let root_pkg_path = temp_dir.join("test");
 ///   let sub_pkg_a_path = root_pkg_path.join("a");
 ///   let sub_pkg_b_path = sub_pkg_a_path .join("b");
@@ -178,7 +152,7 @@ pub fn get_package_modules(pkg_path: &Path) -> Result<Vec<PathBuf>> {
 /// # use color_eyre::Result;
 /// # use assert_fs::prelude::*;
 /// # fn foo() -> Result<()> {
-///   let temp_dir = assert_fs::TempDir::new().unwrap();
+///   let temp_dir = assert_fs::TempDir::new()?;
 ///   let root_pkg_path = temp_dir.join("test");
 ///   let sub_pkg_a_path = root_pkg_path.join("a");
 ///   let sub_pkg_b_path = root_pkg_path.join("b");
@@ -212,6 +186,7 @@ pub fn get_subpackages(pkg_path: &Path) -> Result<Vec<PathBuf>> {
 #[cfg(test)]
 mod test {
     use assert_fs::prelude::*;
+
     use std::fs::create_dir;
 
     use super::*;
@@ -267,6 +242,111 @@ mod test {
 
         assert!(get_module_name(&module_dir).is_err());
 
+        Ok(())
+    }
+    #[test]
+    fn test_get_module_name() -> Result<()> {
+        let temp_dir = assert_fs::TempDir::new()?;
+        let path = temp_dir.child("foo.py");
+        path.touch()?;
+        assert_eq!(get_module_name(&path)?, String::from("foo"));
+        Ok(())
+    }
+    #[test]
+    fn get_module_name_err() -> Result<()> {
+        let temp_dir = assert_fs::TempDir::new()?;
+        let module_dir = temp_dir.join("test");
+        create_dir(&module_dir)?;
+
+        assert!(get_module_name(&module_dir).is_err());
+        Ok(())
+    }
+    #[test]
+    fn test_get_package_name() -> Result<()> {
+        let temp_dir = assert_fs::TempDir::new()?;
+        let pkg_path = temp_dir.join("test");
+        create_empty_python_package_on_disk(&pkg_path)?;
+        assert_eq!(get_package_name(&pkg_path)?, String::from("test"));
+        Ok(())
+    }
+    #[test]
+    fn test_get_package_name_err() -> Result<()> {
+        let temp_dir = assert_fs::TempDir::new()?;
+        let pkg_path = temp_dir.join("foo.py");
+        let _ = File::create(&pkg_path)?;
+        assert!(get_package_name(&pkg_path).is_err());
+        Ok(())
+    }
+    #[test]
+    fn test_package_modules() -> Result<()> {
+        let temp_dir = assert_fs::TempDir::new()?;
+        let root_pkg_path = temp_dir.join("test");
+        let sub_pkg_a_path = root_pkg_path.join("a");
+        let sub_pkg_b_path = sub_pkg_a_path.join("b");
+        create_empty_python_package_on_disk(&root_pkg_path)?;
+        create_empty_python_package_on_disk(&sub_pkg_a_path)?;
+        create_empty_python_package_on_disk(&sub_pkg_b_path)?;
+
+        let _ = File::create(sub_pkg_a_path.join("foo.py"))?;
+        let _ = File::create(sub_pkg_a_path.join("bar.py"))?;
+        let _ = File::create(sub_pkg_b_path.join("baz.py"))?;
+
+        assert_eq!(
+            get_package_modules(&root_pkg_path)?,
+            vec![root_pkg_path.join("__init__.py")]
+        );
+        let mut b_sub_packages = get_package_modules(&sub_pkg_b_path)?;
+        b_sub_packages.sort();
+        assert_eq!(
+            get_package_modules(&sub_pkg_b_path)?,
+            vec![
+                sub_pkg_b_path.join("baz.py"),
+                sub_pkg_b_path.join("__init__.py")
+            ]
+        );
+        let mut a_sub_packages = get_package_modules(&sub_pkg_a_path)?;
+        a_sub_packages.sort();
+        assert_eq!(
+            a_sub_packages,
+            vec![
+                sub_pkg_a_path.join("__init__.py"),
+                sub_pkg_a_path.join("bar.py"),
+                sub_pkg_a_path.join("foo.py"),
+            ]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_get_subpackages() -> Result<()> {
+        let temp_dir = assert_fs::TempDir::new()?;
+        let root_pkg_path = temp_dir.join("test");
+        let sub_pkg_a_path = root_pkg_path.join("a");
+        let sub_pkg_b_path = root_pkg_path.join("b");
+        let sub_pkg_c_path = sub_pkg_b_path.join("c");
+        create_empty_python_package_on_disk(&root_pkg_path)?;
+        create_empty_python_package_on_disk(&sub_pkg_a_path)?;
+        create_empty_python_package_on_disk(&sub_pkg_b_path)?;
+        create_empty_python_package_on_disk(&sub_pkg_c_path)?;
+        let mut sub_packages = get_subpackages(&root_pkg_path)?;
+        sub_packages.sort();
+        assert_eq!(
+            sub_packages,
+            vec![root_pkg_path.join("a"), root_pkg_path.join("b")]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn errors_non_package_modules() -> Result<()> {
+        let temp_dir = assert_fs::TempDir::new()?;
+        assert!(get_package_modules(temp_dir.path()).is_err());
+        Ok(())
+    }
+    #[test]
+    fn errors_non_package_sub_packages() -> Result<()> {
+        let temp_dir = assert_fs::TempDir::new()?;
+        assert!(get_subpackages(temp_dir.path()).is_err());
         Ok(())
     }
 }
