@@ -33,18 +33,18 @@ footer = """
 """
 
 
-
 trim = true
 postprocessors = [
   { pattern = '<REPO>', replace = "https://github.com/savente93/snakeoil" }, # replace repository URL ]
+]
 
 # render body even when there are no releases to process
 output = "CHANGELOG.md"
 
 [git]
-conventional_commits = true
+conventional_commits  = true
 filter_unconventional = true
-split_commits = false
+split_commits         = false
 # regex for preprocessing the commit messages
 commit_preprocessors = [
   # Replace issue numbers
@@ -55,11 +55,11 @@ commit_preprocessors = [
 ]
 # regex for parsing and grouping commits
 commit_parsers = [
-    { message = "^feat", group = "✨ Features" },
-    { message = "^fix", group = "🤕 Fixes" },
-    { message = "^doc", group = "📖 Documentation" },
-    { message = "release", skip = true },
-    { message = ".*", group = "🛠️ Maintenance" },
+  { message = "^feat", group = "✨ Features" },
+  { message = "^fix", group = "🤕 Fixes" },
+  { message = "^doc", group = "📖 Documentation" },
+  { message = "release", skip = true },
+  { message = ".*", group = "🛠️ Maintenance" },
 ]
 # filter out the commits that are not matched by commit parsers
 filter_commits = false

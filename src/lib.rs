@@ -1,3 +1,4 @@
+pub mod fs;
 use color_eyre::eyre::Result;
 
 // okay here, it's just a stub
