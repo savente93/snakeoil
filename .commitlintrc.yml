@@ -1,0 +1,24 @@
+rules:
+  description-empty:
+    level: error
+  subject-empty:
+    level: error
+  body-empty:
+    level: error
+  scope:
+    level: error
+    optional: false
+    options:
+      - docs
+      - ci
+      - misc
+      - code
+      - test
+      - cli
+  type:
+    level: error
+    optional: false
+    options:
+      - feat
+      - fix
+      - chore

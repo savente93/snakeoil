@@ -1,0 +1,29 @@
+repos:
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+      - id: cargo-check
+      - id: clippy
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.26.0
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.31.2
+    hooks:
+      - id: typos
+  - repo: https://github.com/savente93/commitlint-rs
+    rev: d0f10c617d701e29e5fbf153222a4e4120b994fa
+    hooks:
+      - id: commitlint

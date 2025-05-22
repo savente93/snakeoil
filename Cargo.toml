@@ -1,0 +1,76 @@
+[package]
+name         = "snakeoil"
+version      = "0.1.0"
+authors      = ["Sam Vente <savente93@proton.me>"]
+edition      = "2024"
+rust-version = "1.85"
+description  = "A Python api extractor written in Rust"
+readme       = "README.md"
+license      = "MIT"
+
+
+documentation = "https://docs.rs/snakeoil"
+repository    = "https://github.com/savente93/snakeoil"
+
+
+[lib]
+path = "src/lib.rs"
+
+
+[[bin]]
+path = "src/main.rs"
+name = "snakeoil"
+
+
+[dependencies]
+color-eyre          = "0.6"
+strum               = { version = "0.27.1", features = ["derive", "strum_macros"] }
+tracing             = { version = "0", features = ["attributes"] }
+tracing-subscriber  = "0"
+tracing-error       = "0"
+clap                = { version = "4", features = ["derive", "unicode", "cargo"] }
+clap-verbosity-flag = { version = "3.0.3", features = ["tracing"] }
+
+tokio = { version = "1.45", features = [
+  "rt",
+  "rt-multi-thread",
+  "io-util",
+  "io-std",
+  "time",
+  "process",
+  "macros",
+  "fs",
+  "parking_lot",
+  "sync",
+] }
+tokio-stream = "0.1.17"
+
+
+serde             = { version = "1", features = ["derive"] }
+toml_edit         = "0.22.26"
+rustpython-parser = "0.4.0"
+
+
+[dev-dependencies]
+tempfile          = "3.20.0"
+pretty_assertions = "1"
+
+
+# please tell me what to do Clippy-senpai
+[lints.clippy]
+pedantic                   = { level = "warn", priority = -1 }
+single_match               = "warn"
+single_match_else          = "warn"
+needless_match             = "warn"
+needless_late_init         = "warn"
+redundant_pattern_matching = "warn"
+redundant_pattern          = "warn"
+redundant_guards           = "warn"
+collapsible_match          = "warn"
+match_single_binding       = "warn"
+match_same_arms            = "warn"
+match_ref_pats             = "warn"
+match_bool                 = "warn"
+needless_bool              = "deny"
+unwrap_used                = "warn"
+expect_used                = "warn"
