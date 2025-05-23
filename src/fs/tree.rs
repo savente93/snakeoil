@@ -3,6 +3,7 @@ use std::{
     fs::{File, create_dir_all, exists},
     path::{Path, PathBuf},
 };
+use walkdir::WalkDir;
 
 use color_eyre::eyre::{OptionExt, Result, eyre};
 
@@ -183,6 +184,30 @@ pub fn get_subpackages(pkg_path: &Path) -> Result<Vec<PathBuf>> {
     Ok(pkg_modules)
 }
 
+/// will walk the provided path and index all the subpackages and modules
+/// # Errors
+/// Can error on fs errors
+pub fn walk_package(pkg_path: &Path) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
+    let mut sub_modules = vec![];
+    let mut sub_packages = vec![];
+
+    for entry in WalkDir::new(pkg_path).into_iter().filter_entry(|e| {
+        dbg!(e);
+        is_python_package(e.path()).unwrap_or(false) || is_python_module(e.path()).unwrap_or(false)
+    }) {
+        let module_or_package = entry?;
+        let module_or_package_path = module_or_package.path();
+        dbg!(&module_or_package_path);
+        if is_python_module(module_or_package_path)? {
+            sub_modules.push(module_or_package_path.to_path_buf());
+        } else {
+            sub_packages.push(module_or_package_path.to_path_buf());
+        }
+    }
+
+    Ok((sub_packages, sub_modules))
+}
+
 #[cfg(test)]
 mod test {
     use assert_fs::prelude::*;
@@ -298,10 +323,10 @@ mod test {
         let mut b_sub_packages = get_package_modules(&sub_pkg_b_path)?;
         b_sub_packages.sort();
         assert_eq!(
-            get_package_modules(&sub_pkg_b_path)?,
+            b_sub_packages,
             vec![
+                sub_pkg_b_path.join("__init__.py"),
                 sub_pkg_b_path.join("baz.py"),
-                sub_pkg_b_path.join("__init__.py")
             ]
         );
         let mut a_sub_packages = get_package_modules(&sub_pkg_a_path)?;
@@ -347,6 +372,50 @@ mod test {
     fn errors_non_package_sub_packages() -> Result<()> {
         let temp_dir = assert_fs::TempDir::new()?;
         assert!(get_subpackages(temp_dir.path()).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn walk_package_finds_packages_and_modules() -> Result<()> {
+        let temp_dir = assert_fs::TempDir::new()?;
+        let root_pkg_path = temp_dir.join("test");
+        let sub_pkg_a_path = root_pkg_path.join("a");
+        let sub_pkg_b_path = root_pkg_path.join("b");
+        let sub_pkg_c_path = sub_pkg_b_path.join("c");
+        create_empty_python_package_on_disk(&root_pkg_path)?;
+        create_empty_python_package_on_disk(&sub_pkg_a_path)?;
+        create_empty_python_package_on_disk(&sub_pkg_b_path)?;
+        create_empty_python_package_on_disk(&sub_pkg_c_path)?;
+        let _ = File::create(sub_pkg_a_path.join("foo.py"))?;
+        let _ = File::create(sub_pkg_a_path.join("bar.py"))?;
+        let _ = File::create(sub_pkg_b_path.join("baz.py"))?;
+
+        let (mut sub_pkgs, mut sub_modules) = walk_package(&root_pkg_path)?;
+
+        sub_pkgs.sort();
+        sub_modules.sort();
+
+        let expected_sub_pkgs: Vec<PathBuf> = vec!["", "a", "b", "b/c"]
+            .into_iter()
+            .map(|s| root_pkg_path.join(s))
+            .collect();
+
+        assert_eq!(sub_pkgs, expected_sub_pkgs);
+
+        let expected_sub_modules: Vec<PathBuf> = vec![
+            "__init__.py",
+            "a/__init__.py",
+            "a/bar.py",
+            "a/foo.py",
+            "b/__init__.py",
+            "b/baz.py",
+            "b/c/__init__.py",
+        ]
+        .into_iter()
+        .map(|s| root_pkg_path.join(s))
+        .collect();
+
+        assert_eq!(sub_modules, expected_sub_modules);
         Ok(())
     }
 }
