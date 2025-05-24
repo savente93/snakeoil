@@ -1,0 +1,34 @@
+[[customers]]
+id         = 1
+first_name = "Anna"
+last_name  = "Müller"
+email      = "anna.mueller@example.de"
+city       = "Berlin"
+
+[[customers]]
+id         = 2
+first_name = "Lucas"
+last_name  = "Rossi"
+email      = "lucas.rossi@example.it"
+city       = "Rome"
+
+[[customers]]
+id         = 3
+first_name = "Sofia"
+last_name  = "Garcia"
+email      = "sofia.garcia@example.es"
+city       = "Madrid"
+
+[[customers]]
+id         = 4
+first_name = "Oliver"
+last_name  = "Smith"
+email      = "oliver.smith@example.co.uk"
+city       = "London"
+
+[[customers]]
+id         = 5
+first_name = "Emma"
+last_name  = "Durand"
+email      = "emma.durand@example.fr"
+city       = "Paris"

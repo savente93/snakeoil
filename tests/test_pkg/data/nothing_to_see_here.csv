@@ -1,0 +1,6 @@
+CustomerID,FirstName,LastName,Email,City
+1,Anna,Müller,anna.mueller@example.de,Berlin
+2,Lucas,Rossi,lucas.rossi@example.it,Rome
+3,Sofia,Garcia,sofia.garcia@example.es,Madrid
+4,Oliver,Smith,oliver.smith@example.co.uk,London
+5,Emma,Durand,emma.durand@example.fr,Paris
