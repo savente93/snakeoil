@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::{
     ffi::OsStr,
     fs::{File, create_dir_all, exists},

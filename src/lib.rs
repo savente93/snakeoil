@@ -1,4 +1,6 @@
 pub mod fs;
+pub mod parsing;
+
 use color_eyre::eyre::Result;
 
 // okay here, it's just a stub
