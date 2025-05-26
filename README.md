@@ -6,7 +6,7 @@
 [![Docs.rs](https://docs.rs/snakeoil/badge.svg)](https://docs.rs/snakeoil)
 
 
-A Python api extractor written in Rust
+A Python API extractor written in Rust
 
 
 (Currently mostly for shits and giggles, but who knows.)
@@ -28,3 +28,11 @@ If you have to publish, or otherwise fiddle with dependencies of snakeoil you'll
 ## Template
 
 This repo was initially setup using [`cargo-generate`](https://github.com/cargo-generate/cargo-generate) and [this template](https://github.com/savente93/rust-template)
+
+## Roadmap:
+
+- [x] walk file tree to find python objects
+- [x] parse them to extract documentation
+- [] dump documentation in similar file structure to original package
+- [] do parsing and reference linking inside the docs
+- [] Do actual type parsing so we can link to their docs
