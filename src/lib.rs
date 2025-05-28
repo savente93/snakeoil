@@ -1,5 +1,6 @@
 pub mod fs;
 pub mod parsing;
+pub mod render;
 
 use color_eyre::eyre::Result;
 
