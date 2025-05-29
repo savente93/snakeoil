@@ -22,7 +22,9 @@ pub fn render_expr(expr: Expr) -> String {
         Expr::NamedExpr(expr_named_expr) => todo!(),
         Expr::BinOp(expr_bin_op) => {
             out.push_str(&render_expr(*expr_bin_op.left));
+            out.push(' ');
             out.push_str(render_operator(expr_bin_op.op));
+            out.push(' ');
             out.push_str(&render_expr(*expr_bin_op.right));
         }
         Expr::UnaryOp(expr_unary_op) => todo!(),
@@ -365,7 +367,7 @@ mod test {
     }
     #[test]
     fn test_render_binary_op_min() -> Result<()> {
-        let s = "24-3";
+        let s = "24 - 3";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -376,7 +378,7 @@ mod test {
     }
     #[test]
     fn test_render_binary_op_div() -> Result<()> {
-        let s = "24/3";
+        let s = "24 / 3";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -398,7 +400,7 @@ mod test {
     }
     #[test]
     fn test_render_complex_tuple() -> Result<()> {
-        let s = "(3+5j, True)";
+        let s = "(3 + 5j, True)";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -431,7 +433,7 @@ mod test {
     }
     #[test]
     fn test_render_complex_list() -> Result<()> {
-        let s = "[3+5j, True]";
+        let s = "[3 + 5j, True]";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -464,7 +466,7 @@ mod test {
     }
     #[test]
     fn test_render_complex_set() -> Result<()> {
-        let s = "{3+5j, True}";
+        let s = "{3 + 5j, True}";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -475,7 +477,7 @@ mod test {
     }
     #[test]
     fn test_render_complex() -> Result<()> {
-        let s = "3+5j";
+        let s = "3 + 5j";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -486,7 +488,7 @@ mod test {
     }
     #[test]
     fn test_render_lshift() -> Result<()> {
-        let s = "3<<5";
+        let s = "3 << 5";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -497,7 +499,7 @@ mod test {
     }
     #[test]
     fn test_render_rshift() -> Result<()> {
-        let s = "3>>5";
+        let s = "3 >> 5";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -508,7 +510,7 @@ mod test {
     }
     #[test]
     fn test_render_mult() -> Result<()> {
-        let s = "3>>5";
+        let s = "3 * 5";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -519,7 +521,7 @@ mod test {
     }
     #[test]
     fn test_render_mod() -> Result<()> {
-        let s = "3%5";
+        let s = "3 % 5";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -530,7 +532,7 @@ mod test {
     }
     #[test]
     fn test_render_pow() -> Result<()> {
-        let s = "3**5";
+        let s = "3 ** 5";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -541,7 +543,7 @@ mod test {
     }
     #[test]
     fn test_render_bit_or() -> Result<()> {
-        let s = "3|5";
+        let s = "3 | 5";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -552,7 +554,7 @@ mod test {
     }
     #[test]
     fn test_render_bit_and() -> Result<()> {
-        let s = "3&5";
+        let s = "3 & 5";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -563,7 +565,7 @@ mod test {
     }
     #[test]
     fn test_render_bit_xor() -> Result<()> {
-        let s = "3^5";
+        let s = "3 ^ 5";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -574,7 +576,7 @@ mod test {
     }
     #[test]
     fn test_render_bit_floor_div() -> Result<()> {
-        let s = "3//5";
+        let s = "3 // 5";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
@@ -669,6 +671,44 @@ mod test {
 
         assert_eq!(rendered, s);
 
+        Ok(())
+    }
+    #[test]
+    fn test_render_matmul() -> Result<()> {
+        let s = "a @ b";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_complex_real_only() -> Result<()> {
+        let constant = Constant::Complex {
+            real: 2.0,
+            imag: 0.0,
+        };
+        let rendered = render_constant(constant);
+        assert_eq!(rendered, "2");
+        Ok(())
+    }
+    #[test]
+    fn test_complex_real_and_img() -> Result<()> {
+        let constant = Constant::Complex {
+            real: 2.0,
+            imag: 2.0,
+        };
+        let rendered = render_constant(constant);
+        assert_eq!(rendered, "2+2j");
+        Ok(())
+    }
+    #[test]
+    fn test_constant_tuple() -> Result<()> {
+        let constant = Constant::Tuple(vec![Constant::Bool(true), Constant::Bool(false)]);
+        let rendered = render_constant(constant);
+        assert_eq!(rendered, "(True, False)");
         Ok(())
     }
 }
