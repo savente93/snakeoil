@@ -179,7 +179,7 @@ fn render_keyword(keyword: Keyword) -> String {
     let fmt = if let Some(arg) = keyword.arg {
         format!("{}={}", &arg, &render_expr(keyword.value))
     } else {
-        render_expr(keyword.value)
+        format!("**{}", render_expr(keyword.value))
     };
     out.push_str(&fmt);
 
@@ -480,6 +480,116 @@ mod test {
         Ok(())
     }
     #[test]
+    fn test_render_lshift() -> Result<()> {
+        let s = "3<<5";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_rshift() -> Result<()> {
+        let s = "3>>5";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_mult() -> Result<()> {
+        let s = "3>>5";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_mod() -> Result<()> {
+        let s = "3%5";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_pow() -> Result<()> {
+        let s = "3**5";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_bit_or() -> Result<()> {
+        let s = "3|5";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_bit_and() -> Result<()> {
+        let s = "3&5";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_bit_xor() -> Result<()> {
+        let s = "3^5";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_bit_floor_div() -> Result<()> {
+        let s = "3//5";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_complex_img_only() -> Result<()> {
+        let s = "5j";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
     fn test_render_list_comp() -> Result<()> {
         let s = "[a for a in b]";
         let expr = get_expr(s)?;
@@ -503,7 +613,7 @@ mod test {
     }
     #[test]
     fn test_render_call() -> Result<()> {
-        let s = "foo(bar, *baz, mew=bark, chirp=squeek)";
+        let s = "foo(bar, *baz, mew=bark, chirp=squeek, **kwargs)";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
