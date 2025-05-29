@@ -108,7 +108,13 @@ pub fn render_expr(expr: Expr) -> String {
         Expr::JoinedStr(expr_joined_str) => todo!(),
         Expr::Constant(expr_constant) => out.push_str(&render_constant(expr_constant.value)),
         Expr::Attribute(expr_attribute) => todo!(),
-        Expr::Subscript(expr_subscript) => todo!(),
+        Expr::Subscript(expr_subscript) => {
+            out.push_str(&format!(
+                "{}[{}]",
+                render_expr(*expr_subscript.value),
+                render_expr(*expr_subscript.slice)
+            ));
+        }
         Expr::Starred(expr_starred) => {
             out.push('*');
             out.push_str(&render_expr(*expr_starred.value));
@@ -138,7 +144,15 @@ pub fn render_expr(expr: Expr) -> String {
             );
             out.push(')');
         }
-        Expr::Slice(expr_slice) => todo!(),
+        Expr::Slice(expr_slice) => {
+            if let Some(lower) = expr_slice.lower {
+                out.push_str(&render_expr(*lower));
+            }
+            out.push(':');
+            if let Some(upper) = expr_slice.upper {
+                out.push_str(&render_expr(*upper));
+            }
+        }
     }
 
     out
@@ -484,6 +498,28 @@ mod test {
     #[test]
     fn test_render_call() -> Result<()> {
         let s = "foo(bar, *baz, mew=bark, chirp=squeek)";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_subscript() -> Result<()> {
+        let s = "foo[bar]";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_subscript_slice() -> Result<()> {
+        let s = "foo[1:3]";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
