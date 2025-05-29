@@ -7,7 +7,11 @@ pub fn render_expr(expr: Expr) -> String {
     match expr {
         Expr::BoolOp(expr_bool_op) => todo!(),
         Expr::NamedExpr(expr_named_expr) => todo!(),
-        Expr::BinOp(expr_bin_op) => todo!(),
+        Expr::BinOp(expr_bin_op) => {
+            out.push_str(&render_expr(*expr_bin_op.left));
+            out.push('+');
+            out.push_str(&render_expr(*expr_bin_op.right));
+        }
         Expr::UnaryOp(expr_unary_op) => todo!(),
         Expr::Lambda(expr_lambda) => todo!(),
         Expr::IfExp(expr_if_exp) => todo!(),
@@ -30,7 +34,18 @@ pub fn render_expr(expr: Expr) -> String {
         Expr::Starred(expr_starred) => todo!(),
         Expr::Name(expr_name) => out.push_str(expr_name.id.as_str()),
         Expr::List(expr_list) => todo!(),
-        Expr::Tuple(expr_tuple) => todo!(),
+        Expr::Tuple(expr_tuple) => {
+            out.push('(');
+            out.push_str(
+                &expr_tuple
+                    .elts
+                    .into_iter()
+                    .map(render_expr)
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            );
+            out.push(')');
+        }
         Expr::Slice(expr_slice) => todo!(),
     }
 
@@ -59,7 +74,15 @@ fn render_constant(constant: Constant) -> String {
                 .join(", ")
         ),
         Constant::Float(f) => format!("{f}"),
-        Constant::Complex { real, imag } => format!("{real}+{imag}j"),
+        Constant::Complex { real, imag } => {
+            if real.abs() < f64::EPSILON {
+                format!("{imag}j")
+            } else if imag.abs() < f64::EPSILON {
+                format!("{real}")
+            } else {
+                format!("{real}+{imag}j")
+            }
+        }
         Constant::Ellipsis => String::from("..."),
     }
 }
@@ -195,8 +218,8 @@ mod test {
         Ok(())
     }
     #[test]
-    fn test_render_trailing_tuple() -> Result<()> {
-        let s = "(24,)";
+    fn test_render_complex_tuple() -> Result<()> {
+        let s = "(3+5j, True)";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
