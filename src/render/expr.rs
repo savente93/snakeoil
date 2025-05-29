@@ -1,4 +1,6 @@
-use rustpython_parser::ast::{Comprehension, Constant, Expr, Keyword, Operator};
+use rustpython_parser::ast::{CmpOp, Comprehension, Constant, Expr, Keyword, Operator, UnaryOp};
+
+use super::args::render_args;
 
 pub fn render_expr(expr: Expr) -> String {
     let mut out = String::new();
@@ -19,7 +21,13 @@ pub fn render_expr(expr: Expr) -> String {
                     .join(op),
             );
         }
-        Expr::NamedExpr(expr_named_expr) => todo!(),
+        Expr::NamedExpr(expr_named_expr) => {
+            out.push('(');
+            out.push_str(&render_expr(*expr_named_expr.target));
+            out.push_str(" := ");
+            out.push_str(&render_expr(*expr_named_expr.value));
+            out.push(')');
+        }
         Expr::BinOp(expr_bin_op) => {
             out.push_str(&render_expr(*expr_bin_op.left));
             out.push(' ');
@@ -27,9 +35,23 @@ pub fn render_expr(expr: Expr) -> String {
             out.push(' ');
             out.push_str(&render_expr(*expr_bin_op.right));
         }
-        Expr::UnaryOp(expr_unary_op) => todo!(),
-        Expr::Lambda(expr_lambda) => todo!(),
-        Expr::IfExp(expr_if_exp) => todo!(),
+        Expr::UnaryOp(expr_unary_op) => {
+            out.push_str(render_unaryop(expr_unary_op.op));
+            out.push_str(&render_expr(*expr_unary_op.operand));
+        }
+        Expr::Lambda(expr_lambda) => {
+            out.push_str("lambda ");
+            out.push_str(&render_args(*expr_lambda.args));
+            out.push_str(": ");
+            out.push_str(&render_expr(*expr_lambda.body));
+        }
+        Expr::IfExp(expr_if_exp) => {
+            out.push_str(&render_expr(*expr_if_exp.body));
+            out.push_str(" if ");
+            out.push_str(&render_expr(*expr_if_exp.test));
+            out.push_str(" else ");
+            out.push_str(&render_expr(*expr_if_exp.orelse));
+        }
         Expr::Dict(expr_dict) => {
             out.push('{');
             out.push_str(
@@ -77,13 +99,78 @@ pub fn render_expr(expr: Expr) -> String {
             );
             out.push(']');
         }
-        Expr::SetComp(expr_set_comp) => todo!(),
-        Expr::DictComp(expr_dict_comp) => todo!(),
-        Expr::GeneratorExp(expr_generator_exp) => todo!(),
-        Expr::Await(expr_await) => todo!(),
-        Expr::Yield(expr_yield) => todo!(),
-        Expr::YieldFrom(expr_yield_from) => todo!(),
-        Expr::Compare(expr_compare) => todo!(),
+        Expr::DictComp(expr_dict_comp) => {
+            dbg!(&expr_dict_comp);
+            out.push('{');
+            out.push_str(&render_expr(*expr_dict_comp.key));
+            out.push_str(": ");
+            out.push_str(&render_expr(*expr_dict_comp.value));
+            out.push(' ');
+            out.push_str(
+                &expr_dict_comp
+                    .generators
+                    .into_iter()
+                    .map(render_comprehension)
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            );
+            out.push('}');
+        }
+        Expr::SetComp(expr_set_comp) => {
+            out.push('{');
+            out.push_str(&render_expr(*expr_set_comp.elt));
+            out.push(' ');
+            out.push_str(
+                &expr_set_comp
+                    .generators
+                    .into_iter()
+                    .map(render_comprehension)
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            );
+            out.push('}');
+        }
+        Expr::GeneratorExp(expr_generator_exp) => {
+            out.push('(');
+            out.push_str(&render_expr(*expr_generator_exp.elt));
+            out.push(' ');
+            out.push_str(
+                &expr_generator_exp
+                    .generators
+                    .into_iter()
+                    .map(render_comprehension)
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            );
+            out.push(')');
+        }
+        Expr::Await(expr_await) => {
+            out.push_str("await ");
+            out.push_str(&render_expr(*expr_await.value));
+        }
+        Expr::Yield(expr_yield) => {
+            out.push_str("yield ");
+            if let Some(val) = expr_yield.value {
+                out.push_str(&render_expr(*val));
+            }
+        }
+        Expr::YieldFrom(expr_yield_from) => {
+            out.push_str("yield from ");
+            out.push_str(&render_expr(*expr_yield_from.value));
+        }
+        Expr::Compare(expr_compare) => {
+            out.push_str(&render_expr(*expr_compare.left));
+            expr_compare
+                .ops
+                .iter()
+                .zip(expr_compare.comparators)
+                .for_each(|(op, expr)| {
+                    out.push(' ');
+                    out.push_str(render_cmp_op(op));
+                    out.push(' ');
+                    out.push_str(&render_expr(expr))
+                });
+        }
         Expr::Call(expr_call) => {
             out.push_str(&render_expr(*expr_call.func));
             out.push('(');
@@ -95,15 +182,17 @@ pub fn render_expr(expr: Expr) -> String {
                     .collect::<Vec<_>>()
                     .join(", "),
             );
-            out.push_str(", ");
-            out.push_str(
-                &expr_call
-                    .keywords
-                    .into_iter()
-                    .map(render_keyword)
-                    .collect::<Vec<_>>()
-                    .join(", "),
-            );
+            if !expr_call.keywords.is_empty() {
+                out.push_str(", ");
+                out.push_str(
+                    &expr_call
+                        .keywords
+                        .into_iter()
+                        .map(render_keyword)
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                );
+            }
             out.push(')');
         }
         Expr::FormattedValue(expr_formatted_value) => todo!(),
@@ -246,13 +335,42 @@ fn render_operator(op: Operator) -> &'static str {
     }
 }
 
+fn render_cmp_op(op: &CmpOp) -> &'static str {
+    match op {
+        CmpOp::Eq => "=",
+        CmpOp::NotEq => "!=",
+        CmpOp::Lt => "<",
+        CmpOp::LtE => "<=",
+        CmpOp::Gt => ">",
+        CmpOp::GtE => ">=",
+        CmpOp::Is => "is ",
+        CmpOp::IsNot => "is not ",
+        CmpOp::In => "in ",
+        CmpOp::NotIn => "not in ",
+    }
+}
+
+fn render_unaryop(op: UnaryOp) -> &'static str {
+    match op {
+        UnaryOp::Invert => "~",
+        UnaryOp::Not => "not ",
+        UnaryOp::UAdd => "+",
+        UnaryOp::USub => "-",
+    }
+}
+
 #[cfg(test)]
 mod test {
 
     use super::*;
     use color_eyre::Result;
     use pretty_assertions::assert_eq;
-    use rustpython_parser::{Mode, ast::Mod, parse};
+    use rustpython_parser::{
+        Mode,
+        ast::{ExprContext, ExprName, ExprYield, ExprYieldFrom, Identifier, Mod},
+        parse,
+        text_size::TextRange,
+    };
 
     fn get_expr(s: &str) -> Result<Expr> {
         let parsed = parse(s, Mode::Expression, "<embedded>")?;
@@ -709,6 +827,210 @@ mod test {
         let constant = Constant::Tuple(vec![Constant::Bool(true), Constant::Bool(false)]);
         let rendered = render_constant(constant);
         assert_eq!(rendered, "(True, False)");
+        Ok(())
+    }
+    #[test]
+    fn test_unary_op_not() -> Result<()> {
+        let s = "not True";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_unary_op_inv() -> Result<()> {
+        {
+            let s = "~arr";
+            let expr = get_expr(s)?;
+
+            let rendered = render_expr(expr);
+
+            assert_eq!(rendered, s);
+
+            Ok(())
+        }
+    }
+    #[test]
+    fn test_unary_op_usub() -> Result<()> {
+        {
+            let s = "-arr";
+            let expr = get_expr(s)?;
+
+            let rendered = render_expr(expr);
+
+            assert_eq!(rendered, s);
+
+            Ok(())
+        }
+    }
+    #[test]
+    fn test_unary_op_uadd() -> Result<()> {
+        {
+            let s = "+arr";
+            let expr = get_expr(s)?;
+
+            let rendered = render_expr(expr);
+
+            assert_eq!(rendered, s);
+
+            Ok(())
+        }
+    }
+    #[test]
+    fn test_named_expr() -> Result<()> {
+        {
+            let s = "(x := 4)";
+            let expr = get_expr(s)?;
+
+            let rendered = render_expr(expr);
+
+            assert_eq!(rendered, s);
+
+            Ok(())
+        }
+    }
+    #[test]
+    fn test_lambda() -> Result<()> {
+        {
+            let s = "lambda x: x ** 2";
+            let expr = get_expr(s)?;
+
+            let rendered = render_expr(expr);
+
+            assert_eq!(rendered, s);
+
+            Ok(())
+        }
+    }
+    #[test]
+    fn test_if_expr() -> Result<()> {
+        {
+            let s = "a if b else c";
+            let expr = get_expr(s)?;
+
+            let rendered = render_expr(expr);
+
+            assert_eq!(rendered, s);
+
+            Ok(())
+        }
+    }
+    #[test]
+    fn test_dict_compt() -> Result<()> {
+        {
+            let s = "{i: None for i in range(12)}";
+            let expr = get_expr(s)?;
+
+            let rendered = render_expr(expr);
+
+            assert_eq!(rendered, s);
+
+            Ok(())
+        }
+    }
+    #[test]
+    fn test_set_compr() -> Result<()> {
+        {
+            let s = "{a for a in [1, 2, 3]}";
+            let expr = get_expr(s)?;
+
+            let rendered = render_expr(expr);
+
+            assert_eq!(rendered, s);
+
+            Ok(())
+        }
+    }
+    #[test]
+    fn test_generator() -> Result<()> {
+        let s = "{a for a in [1, 2, 3]}";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_await() -> Result<()> {
+        let s = "await foo";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_yield() -> Result<()> {
+        let yield_expr = Expr::Yield(ExprYield {
+            range: TextRange::new(0.into(), 0.into()),
+            value: Some(Box::new(Expr::Name(ExprName {
+                range: TextRange::new(0.into(), 0.into()),
+                id: Identifier::new("foo"),
+                ctx: ExprContext::Load,
+            }))),
+        });
+
+        let rendered = render_expr(yield_expr);
+
+        assert_eq!(rendered, "yield foo");
+
+        Ok(())
+    }
+    #[test]
+    fn test_yield_from() -> Result<()> {
+        let yield_expr = Expr::YieldFrom(ExprYieldFrom {
+            range: TextRange::new(0.into(), 0.into()),
+            value: Box::new(Expr::Name(ExprName {
+                range: TextRange::new(0.into(), 0.into()),
+                id: Identifier::new("foo"),
+                ctx: ExprContext::Load,
+            })),
+        });
+
+        let rendered = render_expr(yield_expr);
+
+        assert_eq!(rendered, "yield from foo");
+
+        Ok(())
+    }
+    #[test]
+    fn test_compare() -> Result<()> {
+        let s = "1 < a <= 10";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_simple_call() -> Result<()> {
+        let s = "range(12)";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_generator_exp() -> Result<()> {
+        let s = "(a for a in range(12))";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
         Ok(())
     }
 }
