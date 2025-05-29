@@ -6,17 +6,17 @@ pub fn render_expr(expr: Expr) -> String {
     #[allow(unused_variables)]
     match expr {
         Expr::BoolOp(expr_bool_op) => {
-            out.push_str(match expr_bool_op.op {
-                rustpython_parser::ast::BoolOp::And => " And ",
-                rustpython_parser::ast::BoolOp::Or => " Or ",
-            });
+            let op = match expr_bool_op.op {
+                rustpython_parser::ast::BoolOp::And => " and ",
+                rustpython_parser::ast::BoolOp::Or => " or ",
+            };
             out.push_str(
                 &expr_bool_op
                     .values
                     .into_iter()
                     .map(render_expr)
                     .collect::<Vec<_>>()
-                    .join(","),
+                    .join(op),
             );
         }
         Expr::NamedExpr(expr_named_expr) => todo!(),
@@ -647,6 +647,17 @@ mod test {
     #[test]
     fn test_render_attribute() -> Result<()> {
         let s = "foo.bar";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_bool_and() -> Result<()> {
+        let s = "True and False or True";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
