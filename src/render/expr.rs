@@ -1,4 +1,4 @@
-use rustpython_parser::ast::{Constant, Expr};
+use rustpython_parser::ast::{Constant, Expr, Operator};
 
 pub fn render_expr(expr: Expr) -> String {
     let mut out = String::new();
@@ -9,7 +9,7 @@ pub fn render_expr(expr: Expr) -> String {
         Expr::NamedExpr(expr_named_expr) => todo!(),
         Expr::BinOp(expr_bin_op) => {
             out.push_str(&render_expr(*expr_bin_op.left));
-            out.push('+');
+            out.push_str(render_operator(expr_bin_op.op));
             out.push_str(&render_expr(*expr_bin_op.right));
         }
         Expr::UnaryOp(expr_unary_op) => todo!(),
@@ -95,6 +95,24 @@ fn render_constant(constant: Constant) -> String {
             }
         }
         Constant::Ellipsis => String::from("..."),
+    }
+}
+
+fn render_operator(op: Operator) -> &'static str {
+    match op {
+        Operator::Add => "+",
+        Operator::Sub => "-",
+        Operator::Mult => "*",
+        Operator::MatMult => "@",
+        Operator::Div => "/",
+        Operator::Mod => "%",
+        Operator::Pow => "**",
+        Operator::LShift => "<<",
+        Operator::RShift => ">>",
+        Operator::BitOr => "|",
+        Operator::BitXor => "^",
+        Operator::BitAnd => "&",
+        Operator::FloorDiv => "//",
     }
 }
 
@@ -209,6 +227,28 @@ mod test {
     #[test]
     fn test_render_tuple() -> Result<()> {
         let s = "(24, 3)";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_binary_op_min() -> Result<()> {
+        let s = "24-3";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_binary_op_div() -> Result<()> {
+        let s = "24/3";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
