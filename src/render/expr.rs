@@ -1,4 +1,4 @@
-use rustpython_parser::ast::{Comprehension, Constant, Expr, Operator};
+use rustpython_parser::ast::{Comprehension, Constant, Expr, Keyword, Operator};
 
 pub fn render_expr(expr: Expr) -> String {
     let mut out = String::new();
@@ -82,13 +82,37 @@ pub fn render_expr(expr: Expr) -> String {
         Expr::Yield(expr_yield) => todo!(),
         Expr::YieldFrom(expr_yield_from) => todo!(),
         Expr::Compare(expr_compare) => todo!(),
-        Expr::Call(expr_call) => todo!(),
+        Expr::Call(expr_call) => {
+            out.push_str(&render_expr(*expr_call.func));
+            out.push('(');
+            out.push_str(
+                &expr_call
+                    .args
+                    .into_iter()
+                    .map(render_expr)
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            );
+            out.push_str(", ");
+            out.push_str(
+                &expr_call
+                    .keywords
+                    .into_iter()
+                    .map(render_keyword)
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            );
+            out.push(')');
+        }
         Expr::FormattedValue(expr_formatted_value) => todo!(),
         Expr::JoinedStr(expr_joined_str) => todo!(),
         Expr::Constant(expr_constant) => out.push_str(&render_constant(expr_constant.value)),
         Expr::Attribute(expr_attribute) => todo!(),
         Expr::Subscript(expr_subscript) => todo!(),
-        Expr::Starred(expr_starred) => todo!(),
+        Expr::Starred(expr_starred) => {
+            out.push('*');
+            out.push_str(&render_expr(*expr_starred.value));
+        }
         Expr::Name(expr_name) => out.push_str(expr_name.id.as_str()),
         Expr::List(expr_list) => {
             out.push('[');
@@ -126,6 +150,18 @@ fn render_comprehension(comp: Comprehension) -> String {
     out.push_str(&render_expr(comp.target));
     out.push_str(" in ");
     out.push_str(&render_expr(comp.iter));
+
+    out
+}
+
+fn render_keyword(keyword: Keyword) -> String {
+    let mut out = String::new();
+    let fmt = if let Some(arg) = keyword.arg {
+        format!("{}={}", &arg, &render_expr(keyword.value))
+    } else {
+        render_expr(keyword.value)
+    };
+    out.push_str(&fmt);
 
     out
 }
@@ -437,6 +473,17 @@ mod test {
     #[test]
     fn test_render_dict() -> Result<()> {
         let s = "{a: 1, **d}";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_call() -> Result<()> {
+        let s = "foo(bar, *baz, mew=bark, chirp=squeek)";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
