@@ -115,10 +115,15 @@ pub fn render_expr(expr: Expr) -> String {
             ));
         }
         Expr::Subscript(expr_subscript) => {
+            let rendered_slice = render_expr(*expr_subscript.slice);
+            let rendered_slice_clean = rendered_slice
+                .strip_prefix("(")
+                .and_then(|s| s.strip_suffix(')'))
+                .unwrap_or(&rendered_slice);
             out.push_str(&format!(
                 "{}[{}]",
                 render_expr(*expr_subscript.value),
-                render_expr(*expr_subscript.slice)
+                rendered_slice_clean
             ));
         }
         Expr::Starred(expr_starred) => {

@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-mod class;
-mod function;
-mod module;
-mod utils;
+pub(crate) mod class;
+pub(crate) mod function;
+pub(crate) mod module;
+pub(crate) mod utils;

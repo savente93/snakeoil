@@ -6,19 +6,29 @@ use super::{
 
 #[derive(Default, Debug)]
 pub struct ModuleDocumentation {
+    pub name: Option<String>,
+    pub prefix: Option<String>,
     pub docstring: Option<String>,
     pub functions: Vec<FunctionDocumentation>,
     pub classes: Vec<ClassDocumentation>,
 }
 // just a conveneience function
-pub fn extract_module_documentation(input_module: &Mod) -> ModuleDocumentation {
+pub fn extract_module_documentation(
+    input_module: &Mod,
+    name: Option<String>,
+    prefix: Option<String>,
+) -> ModuleDocumentation {
     if let Mod::Module(mod_module) = input_module {
-        extract_documentation_from_statements(&mod_module.body)
+        extract_documentation_from_statements(&mod_module.body, name, prefix)
     } else {
         ModuleDocumentation::default()
     }
 }
-fn extract_documentation_from_statements(statements: &[Stmt]) -> ModuleDocumentation {
+fn extract_documentation_from_statements(
+    statements: &[Stmt],
+    name: Option<String>,
+    prefix: Option<String>,
+) -> ModuleDocumentation {
     let mut free_functions = vec![];
     let mut class_definitions = vec![];
     let docstring = extract_docstring_from_body(statements);
@@ -35,6 +45,8 @@ fn extract_documentation_from_statements(statements: &[Stmt]) -> ModuleDocumenta
     }
 
     ModuleDocumentation {
+        name,
+        prefix,
         docstring,
         functions: free_functions,
         classes: class_definitions,
@@ -50,7 +62,7 @@ mod test {
     #[test]
     fn test_doc_extraction_interactive_module() -> Result<()> {
         let expr = parse("1 + 2", Mode::Expression, "<embedded>")?;
-        let docs = extract_module_documentation(&expr);
+        let docs = extract_module_documentation(&expr, None, None);
 
         assert_eq!(docs.docstring, None);
         assert_eq!(docs.functions.len(), 0);

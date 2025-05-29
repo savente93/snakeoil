@@ -1,22 +1,22 @@
 use rustpython_parser::ast::{
-    Arguments, Expr, Identifier, Stmt, StmtAsyncFunctionDef, StmtFunctionDef, TypeParam,
+    Arguments, Expr, Stmt, StmtAsyncFunctionDef, StmtFunctionDef, TypeParam,
 };
 
 use super::utils::extract_docstring_from_body;
 
 #[derive(Debug)]
 pub struct FunctionDocumentation {
-    name: Identifier,
-    docstring: Option<String>,
-    return_type: Option<Expr>,
-    args: Arguments,
-    generics: Vec<TypeParam>,
+    pub name: String,
+    pub docstring: Option<String>,
+    pub return_type: Option<Expr>,
+    pub args: Arguments,
+    pub generics: Vec<TypeParam>,
 }
 
 impl From<&StmtFunctionDef> for FunctionDocumentation {
     fn from(value: &StmtFunctionDef) -> Self {
         Self {
-            name: value.name.clone(),
+            name: value.name.to_string(),
             docstring: extract_docstring_from_body(&value.body),
             return_type: value.returns.as_ref().map(|r| *r.clone()),
             args: *value.args.clone(),
@@ -28,7 +28,7 @@ impl From<&StmtFunctionDef> for FunctionDocumentation {
 impl From<&StmtAsyncFunctionDef> for FunctionDocumentation {
     fn from(value: &StmtAsyncFunctionDef) -> Self {
         Self {
-            name: value.name.clone(),
+            name: value.name.to_string(),
             docstring: extract_docstring_from_body(&value.body),
             return_type: value.returns.as_ref().map(|r| *r.clone()),
             args: *value.args.clone(),
@@ -44,9 +44,6 @@ impl TryFrom<&Stmt> for FunctionDocumentation {
         match value {
             Stmt::FunctionDef(stmt_function_def) => {
                 Ok(FunctionDocumentation::from(stmt_function_def))
-            }
-            Stmt::AsyncFunctionDef(stmt_async_function_def) => {
-                Ok(FunctionDocumentation::from(stmt_async_function_def))
             }
             _ => Err(()),
         }
@@ -97,7 +94,7 @@ def is_odd(i):
     fn test_python_closure() -> &'static str {
         "
 def is_odd(i):
-    def inner_func(i):
+    def inner_func(i: float) -> bool:
         return bool(i&0)
 
     return not inner_func(i)
@@ -129,7 +126,7 @@ def return_none(foo: str, bar, *args, unused: Dict[Any, str] = None) -> 4+9:
     #[test]
     fn parse_doesnt_extract_lambda() -> Result<()> {
         let program = parse_python_str(test_python_lambda())?;
-        let documentation = extract_module_documentation(&program);
+        let documentation = extract_module_documentation(&program, None, None);
         assert_eq!(documentation.functions.len(), 1);
         assert_eq!(documentation.classes.len(), 0);
         Ok(())
@@ -137,7 +134,7 @@ def return_none(foo: str, bar, *args, unused: Dict[Any, str] = None) -> 4+9:
     #[test]
     fn parse_test_python_async_func() -> Result<()> {
         let program = parse_python_str(test_python_async_func_no_types())?;
-        let documentation = extract_module_documentation(&program);
+        let documentation = extract_module_documentation(&program, None, None);
         assert_eq!(documentation.functions.len(), 1);
         assert_eq!(documentation.classes.len(), 0);
         Ok(())
@@ -145,7 +142,7 @@ def return_none(foo: str, bar, *args, unused: Dict[Any, str] = None) -> 4+9:
     #[test]
     fn parse_doesnt_extract_closure() -> Result<()> {
         let program = parse_python_str(test_python_closure())?;
-        let documentation = extract_module_documentation(&program);
+        let documentation = extract_module_documentation(&program, None, None);
         assert_eq!(documentation.functions.len(), 1);
         assert_eq!(documentation.classes.len(), 0);
         Ok(())
@@ -153,7 +150,7 @@ def return_none(foo: str, bar, *args, unused: Dict[Any, str] = None) -> 4+9:
     #[test]
     fn parse_test_python_func_no_types() -> Result<()> {
         let program = parse_python_str(test_python_func_no_types())?;
-        let documentation = extract_module_documentation(&program);
+        let documentation = extract_module_documentation(&program, None, None);
         assert_eq!(documentation.functions.len(), 1);
         assert_eq!(documentation.classes.len(), 0);
         Ok(())
@@ -161,7 +158,7 @@ def return_none(foo: str, bar, *args, unused: Dict[Any, str] = None) -> 4+9:
     #[test]
     fn parse_test_python_no_func() -> Result<()> {
         let program = parse_python_str(test_python_no_func())?;
-        let documentation = extract_module_documentation(&program);
+        let documentation = extract_module_documentation(&program, None, None);
         assert_eq!(documentation.functions.len(), 0);
         assert_eq!(documentation.classes.len(), 0);
         Ok(())
@@ -170,7 +167,7 @@ def return_none(foo: str, bar, *args, unused: Dict[Any, str] = None) -> 4+9:
     fn parse_test_python_func_dict_type() -> Result<()> {
         let program = parse_python_str(test_python_func_annotated())?;
 
-        let documentation = extract_module_documentation(&program);
+        let documentation = extract_module_documentation(&program, None, None);
         assert_eq!(documentation.functions.len(), 1);
         assert_eq!(documentation.classes.len(), 0);
         Ok(())
@@ -179,7 +176,7 @@ def return_none(foo: str, bar, *args, unused: Dict[Any, str] = None) -> 4+9:
     fn parse_test_python_func_with_types() -> Result<()> {
         let program = parse_python_str(test_python_func_with_types())?;
 
-        let documentation = extract_module_documentation(&program);
+        let documentation = extract_module_documentation(&program, None, None);
         assert_eq!(documentation.functions.len(), 1);
         assert_eq!(documentation.classes.len(), 0);
         Ok(())
@@ -187,7 +184,7 @@ def return_none(foo: str, bar, *args, unused: Dict[Any, str] = None) -> 4+9:
     #[test]
     fn parse_test_python_func_docstring() -> Result<()> {
         let program = parse_python_str(test_python_func_docstring())?;
-        let documentation = extract_module_documentation(&program);
+        let documentation = extract_module_documentation(&program, None, None);
         assert_eq!(documentation.functions.len(), 1);
         assert_eq!(documentation.classes.len(), 0);
         Ok(())
@@ -196,7 +193,7 @@ def return_none(foo: str, bar, *args, unused: Dict[Any, str] = None) -> 4+9:
     fn parse_test_python_function_docstring() -> Result<()> {
         let program = parse_python_str(test_python_func_docstring())?;
 
-        let documentation = extract_module_documentation(&program);
+        let documentation = extract_module_documentation(&program, None, None);
         // we checked before there is at least one class, so this is safe
         #[allow(clippy::unwrap_used)]
         let function = documentation.functions.first().unwrap();
