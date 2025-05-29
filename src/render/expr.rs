@@ -33,7 +33,18 @@ pub fn render_expr(expr: Expr) -> String {
         Expr::Subscript(expr_subscript) => todo!(),
         Expr::Starred(expr_starred) => todo!(),
         Expr::Name(expr_name) => out.push_str(expr_name.id.as_str()),
-        Expr::List(expr_list) => todo!(),
+        Expr::List(expr_list) => {
+            out.push('[');
+            out.push_str(
+                &expr_list
+                    .elts
+                    .into_iter()
+                    .map(render_expr)
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            );
+            out.push(']');
+        }
         Expr::Tuple(expr_tuple) => {
             out.push('(');
             out.push_str(
@@ -220,6 +231,39 @@ mod test {
     #[test]
     fn test_render_complex_tuple() -> Result<()> {
         let s = "(3+5j, True)";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_list() -> Result<()> {
+        let s = "[24, 3]";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_empty_list() -> Result<()> {
+        let s = "[]";
+        let expr = get_expr(s)?;
+
+        let rendered = render_expr(expr);
+
+        assert_eq!(rendered, s);
+
+        Ok(())
+    }
+    #[test]
+    fn test_render_complex_list() -> Result<()> {
+        let s = "[3+5j, True]";
         let expr = get_expr(s)?;
 
         let rendered = render_expr(expr);
