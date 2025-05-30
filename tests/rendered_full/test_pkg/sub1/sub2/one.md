@@ -4,8 +4,7 @@ one.py
 
 Module with simple utility functions.
 
-
-# test_pkg.sub1.sub2.one.is_even
+## test_pkg.sub1.sub2.one.is_even
 
 is_even(num: int) -> bool
 
@@ -21,8 +20,7 @@ Example:
     >>> is_even(4)
     True
 
-
-# test_pkg.sub1.sub2.one.is_odd
+## test_pkg.sub1.sub2.one.is_odd
 
 is_odd(num: int) -> bool
 

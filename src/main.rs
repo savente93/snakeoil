@@ -1,8 +1,6 @@
 use color_eyre::eyre::Result;
 
 mod cli;
-mod fs;
-mod parsing;
 
 use crate::cli::Args;
 use clap::Parser;

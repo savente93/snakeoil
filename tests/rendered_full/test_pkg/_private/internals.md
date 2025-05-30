@@ -4,7 +4,7 @@ internals.py
 
 Internal helper functions and classes.
 
-# test_pkg._private.internals.calculate_secret_value
+## test_pkg._private.internals.calculate_secret_value
 
 calculate_secret_value(x: int, y: int) -> int
 
@@ -21,8 +21,7 @@ Example:
     >>> calculate_secret_value(2, 3)
     13
 
-
-# test_pkg._private.internals._double_value
+## test_pkg._private.internals._double_value
 
 _double_value(value: int) -> int
 
@@ -34,24 +33,23 @@ Args:
 Returns:
     int: Doubled value.
 
-
-# test_pkg._private.internals.InternalHelper
+## test_pkg._private.internals.InternalHelper
 
 Helper class for internal computations.
 
 Attributes:
     factor (int): Multiplier factor.
 
-# test_pkg._private.internals.InternalHelper.__init__
+### test_pkg._private.internals.InternalHelper.__init__
 
-__init__(self, factor: int = DEFAULT_FACTOR) -> None
+__init__(self, factor: int = DEFAULT_FACTOR)
 
 Initialize with a multiplication factor.
 
 Args:
     factor (int): Factor to multiply values by.
 
-# test_pkg._private.internals.InternalHelper.amplify
+### test_pkg._private.internals.InternalHelper.amplify
 
 amplify(self, value: int) -> int
 
@@ -63,8 +61,8 @@ Args:
 Returns:
     int: Amplified value.
 
-# test_pkg._private.internals.InternalHelper.reset_factor
+### test_pkg._private.internals.InternalHelper.reset_factor
 
-reset_factor(self) -> None:
+reset_factor(self)
 
 Reset factor to default value.

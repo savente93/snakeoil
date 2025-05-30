@@ -20,19 +20,6 @@ Example:
     >>> greet("Anna")
     'Hello, Anna!'
 
-## test_pk.bar._format_name
-
-_format_name(name: str) -> str
-
-Format the name string to title case (private helper).
-
-Args:
-    name (str): Name string.
-
-Returns:
-    str: Formatted name.
-
-
 ## test_pkg.bar.Greeter
 
 Greeter class that holds a name and greets.
@@ -40,18 +27,18 @@ Greeter class that holds a name and greets.
 Attributes:
     name (str): The name to greet.
 
-## test_pkg.bar.Greeter.__init__
+### test_pkg.bar.Greeter.__init__
 
-__init__(self, name: str):
+__init__(self, name: str)
 
 Initialize with a name.
 
 Args:
     name (str): Name to greet.
 
-## test_pkg.bar.Greeter.greet
+### test_pkg.bar.Greeter.greet
 
-greet(self) -> str:
+greet(self) -> str
 
 Generate a greeting message.
 

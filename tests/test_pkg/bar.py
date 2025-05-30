@@ -24,6 +24,10 @@ def greet(name: str) -> str:
     return f"{DEFAULT_GREETING}, {name}!"
 
 
+def greet_undocumented(name):
+    return f"{DEFAULT_GREETING}, {name}!"
+
+
 def _format_name(name: str) -> str:
     """
     Format the name string to title case (private helper).

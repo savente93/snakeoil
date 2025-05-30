@@ -49,7 +49,7 @@ pub(crate) fn render_arg_with_default(arg: ArgWithDefault) -> String {
 
     out.push_str(&render_arg(arg.def));
     if let Some(default) = arg.default {
-        out.push('=');
+        out.push_str(" = ");
         out.push_str(&render_expr(*default));
     }
 

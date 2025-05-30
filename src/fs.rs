@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::{
     ffi::OsStr,
     fs::{File, create_dir_all, exists},
@@ -15,7 +13,7 @@ use color_eyre::eyre::{OptionExt, Result, eyre};
 /// # Errors
 /// returns an error if there is any `fs` error
 pub fn is_python_module(path: &Path) -> Result<bool> {
-    Ok(exists(path)? && path.is_file() && path.extension().is_some_and(|x| x == OsStr::new("py")))
+    Ok(path.extension().is_some_and(|x| x == OsStr::new("py")))
 }
 
 /// determines whether given path is a Python package
@@ -24,7 +22,62 @@ pub fn is_python_module(path: &Path) -> Result<bool> {
 /// # Errors
 /// returns an error if there is any `fs` error
 pub fn is_python_package(path: &Path) -> Result<bool> {
-    Ok(exists(path)? && path.is_dir() && exists(path.join("__init__.py"))?)
+    Ok(path.is_dir() && exists(path.join("__init__.py"))?)
+}
+
+pub fn is_private_module(path: &Path) -> bool {
+    if let Some(stem) = path.file_stem() {
+        stem.to_str()
+            .map(|s| s.starts_with("_") && s != "__init__")
+            .unwrap_or(false)
+    } else {
+        false
+    }
+}
+
+pub fn get_python_prefix(rel_path: &Path) -> Result<Option<String>> {
+    if let Some(file_name) = rel_path.file_name() {
+        if file_name == "__init__.py" {
+            let parent = {
+                // necessary because the parent of a relative path with only one component
+                // is Some("") and we don't want that
+                let temp = rel_path.parent().and_then(|p| p.parent());
+                if temp == Some(&PathBuf::new()) {
+                    None
+                } else {
+                    temp
+                }
+            };
+
+            if let Some(par) = parent {
+                Ok(Some(
+                    par.components()
+                        .filter_map(|comp| comp.as_os_str().to_str())
+                        .map(|s| s.to_string())
+                        .collect::<Vec<_>>()
+                        .join("."),
+                ))
+            } else {
+                Ok(None)
+            }
+        } else {
+            let parent = rel_path.parent();
+
+            if let Some(par) = parent {
+                Ok(Some(
+                    par.components()
+                        .filter_map(|comp| comp.as_os_str().to_str())
+                        .map(|s| s.to_string())
+                        .collect::<Vec<_>>()
+                        .join("."),
+                ))
+            } else {
+                Ok(None)
+            }
+        }
+    } else {
+        Err(eyre!("Could not determine file name."))
+    }
 }
 
 /// determines the name of a python module which is the file stem of the .py file
@@ -45,49 +98,24 @@ pub fn is_python_package(path: &Path) -> Result<bool> {
 /// returns an error if there is any `fs` error or
 /// if the provided directory is not a python module
 pub fn get_module_name(path: &Path) -> Result<String> {
-    if is_python_module(path)? {
-        let name: Result<String> = path
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .map(ToString::to_string)
-            .ok_or_eyre("Could not determine file name of python module due to fs error");
-        name
+    let file_stem = path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .ok_or_eyre("Could not determine file name of python module due to fs error");
+
+    if let Ok(stem) = file_stem {
+        if stem == "__init__" {
+            path.parent()
+                .and_then(|p| p.file_stem())
+                .and_then(|p| p.to_str())
+                .map(|s| s.to_string())
+                .ok_or_eyre("could not determine name of parent dir.")
+        } else {
+            Ok(stem.to_string())
+        }
     } else {
         Err(eyre!(format!(
             "{} is not a python module, thus it's name could not be determined",
-            path.display()
-        )))
-    }
-}
-
-/// determines the name of a python package on disk
-/// which is the name of the directory containing the `__init__.py` file.
-/// ```
-/// # use snakeoil::fs::{get_package_name, create_empty_python_package_on_disk};
-/// # use color_eyre::Result;
-/// # use assert_fs::prelude::*;
-/// # fn foo() -> Result<()> {
-///   let temp_dir = assert_fs::TempDir::new()?;
-///   let pkg_path = temp_dir.join("test");
-///   create_empty_python_package_on_disk(&temp_dir.join("test"));
-///   assert_eq!(get_package_name(&temp_dir.join("test"))?, String::from("test"));
-/// # Ok(())
-/// # }
-/// ```
-/// # Errors
-/// returns an error if there is any `fs` error or
-/// if the provided directory is not a python package
-pub fn get_package_name(path: &Path) -> Result<String> {
-    if is_python_package(path)? {
-        let name: Result<String> = path
-            .file_name()
-            .and_then(|s| s.to_str())
-            .map(ToString::to_string)
-            .ok_or_eyre("Could not determine file name of python package due to fs error");
-        name
-    } else {
-        Err(eyre!(format!(
-            "{} is not a python package, thus it's name could not be determined",
             path.display()
         )))
     }
@@ -186,20 +214,29 @@ pub fn get_subpackages(pkg_path: &Path) -> Result<Vec<PathBuf>> {
     Ok(pkg_modules)
 }
 
+#[derive(Debug)]
+pub struct PackageIndex {
+    pub module_paths: Vec<PathBuf>,
+    pub package_paths: Vec<PathBuf>,
+}
+
 /// will walk the provided path and index all the subpackages and modules
 /// # Errors
 /// Can error on fs errors
-pub fn walk_package(pkg_path: &Path) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
+pub fn walk_package(pkg_path: &Path, skip_private: bool) -> Result<PackageIndex> {
     let mut sub_modules = vec![];
     let mut sub_packages = vec![];
 
     for entry in WalkDir::new(pkg_path).into_iter().filter_entry(|e| {
-        dbg!(e);
-        is_python_package(e.path()).unwrap_or(false) || is_python_module(e.path()).unwrap_or(false)
+        (is_python_package(e.path()).unwrap_or(false)
+            || is_python_module(e.path()).unwrap_or(false))
+            && (!is_private_module(e.path()) || !skip_private)
     }) {
         let module_or_package = entry?;
         let module_or_package_path = module_or_package.path();
-        dbg!(&module_or_package_path);
+        if is_private_module(module_or_package_path) && skip_private {
+            continue;
+        }
         if is_python_module(module_or_package_path)? {
             sub_modules.push(module_or_package_path.to_path_buf());
         } else {
@@ -207,14 +244,15 @@ pub fn walk_package(pkg_path: &Path) -> Result<(Vec<PathBuf>, Vec<PathBuf>)> {
         }
     }
 
-    Ok((sub_packages, sub_modules))
+    Ok(PackageIndex {
+        module_paths: sub_modules,
+        package_paths: sub_packages,
+    })
 }
 
 #[cfg(test)]
 mod test {
     use assert_fs::prelude::*;
-
-    use std::fs::create_dir;
 
     use super::*;
 
@@ -232,21 +270,12 @@ mod test {
     }
 
     #[test]
-    fn non_existing_dir_is_not_python_module() -> Result<()> {
-        let temp_dir = assert_fs::TempDir::new()?;
-        let module_dir = temp_dir.join("test");
-        assert!(get_module_name(&module_dir).is_err());
-
-        Ok(())
-    }
-
-    #[test]
     fn correctly_determines_dummy_python_package_name() -> Result<()> {
         let temp_dir = assert_fs::TempDir::new()?;
         let module_dir = temp_dir.join("test");
         create_empty_python_package_on_disk(&module_dir)?;
 
-        assert_eq!(get_package_name(&module_dir)?, String::from("test"));
+        assert_eq!(get_module_name(&module_dir)?, String::from("test"));
 
         Ok(())
     }
@@ -261,16 +290,7 @@ mod test {
 
         Ok(())
     }
-    #[test]
-    fn determine_module_names_fails_on_non_module() -> Result<()> {
-        let temp_dir = assert_fs::TempDir::new()?;
-        let module_dir = temp_dir.join("test");
-        create_dir(&module_dir)?;
 
-        assert!(get_module_name(&module_dir).is_err());
-
-        Ok(())
-    }
     #[test]
     fn test_get_module_name() -> Result<()> {
         let temp_dir = assert_fs::TempDir::new()?;
@@ -279,31 +299,16 @@ mod test {
         assert_eq!(get_module_name(&path)?, String::from("foo"));
         Ok(())
     }
-    #[test]
-    fn get_module_name_err() -> Result<()> {
-        let temp_dir = assert_fs::TempDir::new()?;
-        let module_dir = temp_dir.join("test");
-        create_dir(&module_dir)?;
 
-        assert!(get_module_name(&module_dir).is_err());
-        Ok(())
-    }
     #[test]
     fn test_get_package_name() -> Result<()> {
         let temp_dir = assert_fs::TempDir::new()?;
         let pkg_path = temp_dir.join("test");
         create_empty_python_package_on_disk(&pkg_path)?;
-        assert_eq!(get_package_name(&pkg_path)?, String::from("test"));
+        assert_eq!(get_module_name(&pkg_path)?, String::from("test"));
         Ok(())
     }
-    #[test]
-    fn test_get_package_name_err() -> Result<()> {
-        let temp_dir = assert_fs::TempDir::new()?;
-        let pkg_path = temp_dir.join("foo.py");
-        let _ = File::create(&pkg_path)?;
-        assert!(get_package_name(&pkg_path).is_err());
-        Ok(())
-    }
+
     #[test]
     fn test_package_modules() -> Result<()> {
         let temp_dir = assert_fs::TempDir::new()?;
@@ -392,17 +397,17 @@ mod test {
         let _ = File::create(sub_pkg_a_path.join("bar.py"))?;
         let _ = File::create(sub_pkg_b_path.join("baz.py"))?;
 
-        let (mut sub_pkgs, mut sub_modules) = walk_package(&root_pkg_path)?;
+        let mut index = walk_package(&root_pkg_path, false)?;
 
-        sub_pkgs.sort();
-        sub_modules.sort();
+        index.module_paths.sort();
+        index.package_paths.sort();
 
         let expected_sub_pkgs: Vec<PathBuf> = vec!["", "a", "b", "b/c"]
             .into_iter()
             .map(|s| root_pkg_path.join(s))
             .collect();
 
-        assert_eq!(sub_pkgs, expected_sub_pkgs);
+        assert_eq!(index.package_paths, expected_sub_pkgs);
 
         let expected_sub_modules: Vec<PathBuf> = vec![
             "__init__.py",
@@ -417,7 +422,28 @@ mod test {
         .map(|s| root_pkg_path.join(s))
         .collect();
 
-        assert_eq!(sub_modules, expected_sub_modules);
+        assert_eq!(index.module_paths, expected_sub_modules);
+        Ok(())
+    }
+
+    #[test]
+    fn test_get_python_prefix_package() -> Result<()> {
+        let input = PathBuf::from("foo/bar/baz/__init__.py");
+        let expected = String::from("foo.bar");
+        assert_eq!(get_python_prefix(&input)?, Some(expected));
+        Ok(())
+    }
+    #[test]
+    fn test_get_python_prefix_module() -> Result<()> {
+        let input = PathBuf::from("foo/bar/baz/mew.py");
+        let expected = String::from("foo.bar.baz");
+        assert_eq!(get_python_prefix(&input)?, Some(expected));
+        Ok(())
+    }
+    #[test]
+    fn test_shallow_prefix() -> Result<()> {
+        let input = PathBuf::from("foo/__init__.py");
+        assert_eq!(get_python_prefix(&input)?, None);
         Ok(())
     }
 }

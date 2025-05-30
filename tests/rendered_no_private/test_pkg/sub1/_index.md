@@ -1,4 +1,4 @@
-## test_pkg.sub1
+# test_pkg.sub1
 
 sub1 subpackage initialization.
 

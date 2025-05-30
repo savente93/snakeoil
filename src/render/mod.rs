@@ -1,6 +1,11 @@
 pub mod args;
 pub mod expr;
 
+use std::{
+    ffi::OsStr,
+    path::{Path, PathBuf},
+};
+
 use args::render_args;
 use expr::render_expr;
 
@@ -8,37 +13,55 @@ use crate::parsing::{
     class::ClassDocumentation, function::FunctionDocumentation, module::ModuleDocumentation,
 };
 
+pub fn translate_filename(path: &Path) -> PathBuf {
+    let mut translated = path.with_extension("md");
+    if translated.file_stem() == Some(OsStr::new("__init__")) {
+        translated = translated.with_file_name("_index.md");
+    }
+
+    translated
+}
+
 pub fn render_module(mod_doc: ModuleDocumentation) -> String {
     let mut out = String::new();
-    if mod_doc.name.is_some() | mod_doc.prefix.is_some() {
-        out.push_str("# ");
-    }
-    if let Some(prefix) = &mod_doc.prefix {
-        out.push_str(prefix);
-    }
-    if let Some(name) = &mod_doc.name {
-        if mod_doc.prefix.is_some() {
-            out.push('.');
-        }
-        out.push_str(name);
-    }
-    if mod_doc.name.is_some() | mod_doc.prefix.is_some() {
-        out.push('\n');
+    let maybe_header = match (&mod_doc.prefix, &mod_doc.name) {
+        (None, None) => None,
+        (None, Some(name)) => Some(format!("# {}\n", name)),
+        (Some(pref), None) => Some(format!("# {}\n", pref)),
+        (Some(pref), Some(name)) => Some(format!("# {}.{}\n", pref, name)),
+    };
+
+    if let Some(header) = maybe_header {
+        out.push_str(&header);
     }
 
     if let Some(docstring) = &mod_doc.docstring {
         out.push('\n');
-        out.push_str(docstring);
+        out.push_str(docstring.trim());
         out.push('\n');
     }
 
     for fn_docs in mod_doc.functions {
         out.push('\n');
-        out.push_str(&render_function_docs(fn_docs, &mod_doc.prefix, 2));
+        let sub_prefix = match (&mod_doc.prefix, &mod_doc.name) {
+            (None, None) => None,
+            (None, Some(name)) => Some(name.clone()),
+            (Some(pref), None) => Some(pref.clone()),
+            (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
+        };
+        out.push_str(render_function_docs(fn_docs, &sub_prefix, 2).trim_end());
+        out.push('\n');
     }
 
     for class_docs in mod_doc.classes {
-        out.push_str(&render_class_docs(class_docs, &mod_doc.prefix, 2));
+        let sub_prefix = match (&mod_doc.prefix, &mod_doc.name) {
+            (None, None) => None,
+            (None, Some(name)) => Some(name.clone()),
+            (Some(pref), None) => Some(pref.clone()),
+            (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
+        };
+        out.push_str(render_class_docs(class_docs, &sub_prefix, 2).trim_end());
+        out.push('\n');
     }
 
     out
@@ -64,7 +87,14 @@ fn render_class_docs(
 
     if let Some(docstring) = class_docs.docstring {
         let indent = detect_docstring_indent_prefix(&docstring);
-        out.push_str(&docstring.replace(&indent, ""));
+        let docstring_ident_stripped = docstring
+            .split("\n")
+            .map(|s| s.strip_prefix(&indent).unwrap_or(s))
+            .collect::<Vec<_>>()
+            .join("\n");
+        out.push('\n');
+        out.push_str(docstring_ident_stripped.trim());
+        out.push('\n');
     }
     let method_prefix = if let Some(p) = prefix {
         Some(format!("{}.{}", p, class_docs.name))
@@ -72,7 +102,9 @@ fn render_class_docs(
         Some(class_docs.name.to_string())
     };
     for fn_docs in class_docs.methods {
-        out.push_str(&render_function_docs(fn_docs, &method_prefix, 3));
+        out.push('\n');
+        out.push_str(render_function_docs(fn_docs, &method_prefix, header_level + 1).trim());
+        out.push('\n');
     }
     out
 }
@@ -105,10 +137,14 @@ fn render_function_docs(
     out.push('\n');
 
     if let Some(docstring) = fn_docs.docstring {
-        out.push('\n');
-
         let indent = detect_docstring_indent_prefix(&docstring);
-        out.push_str(docstring.replace(&indent, "").trim());
+        let docstring_ident_stripped = docstring
+            .split("\n")
+            .map(|s| s.strip_prefix(&indent).unwrap_or(s))
+            .collect::<Vec<_>>()
+            .join("\n");
+        out.push('\n');
+        out.push_str(docstring_ident_stripped.trim());
         out.push('\n');
     }
     out
@@ -133,12 +169,14 @@ fn detect_docstring_indent_prefix(docstring: &str) -> String {
 #[cfg(test)]
 mod test {
 
+    use std::path::PathBuf;
+
     use color_eyre::Result;
     use pretty_assertions::assert_eq;
 
     use crate::{
         parsing::{module::extract_module_documentation, utils::parse_python_str},
-        render::render_module,
+        render::{render_module, translate_filename},
     };
     fn test_dirty_module_str() -> &'static str {
         r"'''This is a module that is used to test snakeoil.'''
@@ -162,6 +200,11 @@ class Greeter:
 
     def greet(self, name, *args, foo: str = 'bar', **kwargs) -> Callable[[], None]:
         '''
+
+
+
+
+
         Greet the world.
 
         Parameters
@@ -173,6 +216,10 @@ class Greeter:
         -------
         Callable[[], None]
             just a random closure to make the types interesting to render.
+
+
+
+
         '''
         print('Hello, world!')
         def inner():
@@ -186,19 +233,19 @@ class Greeter:
 
 This is a module that is used to test snakeoil.
 
-## snakeoil.testing.foo
+## snakeoil.testing.test_module.foo
 
 foo(bar: int) -> Dict[str, Any]
 
 this is a docstring for the foo function
 
-## snakeoil.testing.Greeter
+## snakeoil.testing.test_module.Greeter
 
 this is a class docstring.
 
-### snakeoil.testing.Greeter.greet
+### snakeoil.testing.test_module.Greeter.greet
 
-greet(self, name, *args, foo: str="bar", **kwargs) -> Callable[[], None]
+greet(self, name, *args, foo: str = "bar", **kwargs) -> Callable[[], None]
 
 Greet the world.
 
@@ -221,6 +268,8 @@ Callable[[], None]
             &parsed,
             Some(String::from("test_module")),
             Some(String::from("snakeoil.testing")),
+            false,
+            false,
         );
 
         let rendered = render_module(mod_documentation);
@@ -245,7 +294,7 @@ this is a class docstring.
 
 ### Greeter.greet
 
-greet(self, name, *args, foo: str="bar", **kwargs) -> Callable[[], None]
+greet(self, name, *args, foo: str = "bar", **kwargs) -> Callable[[], None]
 
 Greet the world.
 
@@ -264,12 +313,26 @@ Callable[[], None]
     #[test]
     fn render_module_documentation_no_prefix() -> Result<()> {
         let parsed = parse_python_str(test_dirty_module_str())?;
-        let mod_documentation = extract_module_documentation(&parsed, None, None);
+        let mod_documentation = extract_module_documentation(&parsed, None, None, false, false);
 
         let rendered = render_module(mod_documentation);
 
         assert_eq!(rendered, expected_module_docs_no_prefix_rendered());
 
+        Ok(())
+    }
+    #[test]
+    fn test_translate_filename_init() -> Result<()> {
+        let input = PathBuf::from("foo/bar/__init__.py");
+        let expected = PathBuf::from("foo/bar/_index.md");
+        assert_eq!(translate_filename(&input), expected);
+        Ok(())
+    }
+    #[test]
+    fn test_translate_filename_module() -> Result<()> {
+        let input = PathBuf::from("foo/bar/baz.py");
+        let expected = PathBuf::from("foo/bar/baz.md");
+        assert_eq!(translate_filename(&input), expected);
         Ok(())
     }
 }

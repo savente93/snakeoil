@@ -4,7 +4,7 @@ foo.py
 
 Example module demonstrating a calculator.
 
-# test_pkg.foo.add
+## test_pkg.foo.add
 
 add(a: float, b: float) -> float
 
@@ -21,8 +21,7 @@ Example:
     >>> add(2.5, 4.5)
     7.0
 
-
-# test_pkg.foo.multiply
+## test_pkg.foo.multiply
 
 multiply(a: float, b: float) -> float
 
@@ -35,8 +34,7 @@ Args:
 Returns:
     float: Product of a and b.
 
-
-# test_pkg.foo._subtract
+## test_pkg.foo._subtract
 
 _subtract(a: float, b: float) -> float
 

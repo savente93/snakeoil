@@ -4,8 +4,7 @@ mid.py
 
 Example module inside sub1.
 
-
-# test_pkg.sub1.mid.square
+## test_pkg.sub1.mid.square
 
 square(x: int) -> int
 
@@ -21,16 +20,14 @@ Example:
     >>> square(4)
     16
 
-
-# test_pkg.sub1.mid.Squarer
+## test_pkg.sub1.mid.Squarer
 
 Class to square numbers.
 
 Methods:
     square_number(x): Return square of x.
 
-
-# test_pkg.sub1.mid.Squarer.square_number
+### test_pkg.sub1.mid.Squarer.square_number
 
 square_number(self, x: int) -> int
 
