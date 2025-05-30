@@ -64,7 +64,12 @@ pub fn render_docs(
                 let mut file = File::create(new_path)?;
                 file.write_all(rendered.as_bytes())?;
             }
-            Err(_) => {
+            Err(e) => {
+                tracing::error!(
+                    "The following error occurred while processing {}: {}",
+                    &sub_module.display(),
+                    e
+                );
                 errored.push(sub_module);
             }
         }

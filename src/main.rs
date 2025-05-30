@@ -1,4 +1,6 @@
 use color_eyre::eyre::Result;
+use snakeoil::render_docs;
+use tracing::subscriber::set_global_default;
 
 mod cli;
 
@@ -11,16 +13,18 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
 
     let args = Args::parse();
-    let _subscriber = tracing_subscriber::fmt()
+    let subscriber = tracing_subscriber::fmt()
         .with_max_level(args.verbose.tracing_level_filter())
         .finish();
 
-    tracing::trace!("trace");
-    tracing::debug!("debug");
-    tracing::info!("info");
-    tracing::warn!("warning");
-    tracing::error!("error");
+    set_global_default(subscriber)?;
 
-    // ...
+    render_docs(
+        &args.pkg_path,
+        &args.output_dir,
+        args.skip_private,
+        args.skip_undoc,
+    )?;
+
     Ok(())
 }
