@@ -2,14 +2,83 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![codecov](https://codecov.io/gh/savente93/snakeoil/branch/main/graph/badge.svg)](https://codecov.io/gh/savente93/snakeoil)
-[![crates.io](https://img.shields.io/crates/v/snakeoil)](https://crates.io/crates/snakeoil)
-[![Docs.rs](https://docs.rs/snakeoil/badge.svg)](https://docs.rs/snakeoil)
+ 
 
+A Python API extractor written in Rust. I got frustrated with the standard tools used for documentation generation used in Python, namely that all of the ones I've worked with have at least one of the following to characteristics:
 
-A Python API extractor written in Rust
+1. slow
+2. poor DevX (e.g. [Sphinx](https://www.sphinx-doc.org/en/master/) lacks a `serve` functionality)
+
+Number 1 is particularly a concern for packages that are slow to import, or have a convoluted structure (which is the case for some packages I work with)
+
+There are many excellent Statict Site Generators like [Hugo](https://gohugo.io) or [Zola](https://www.getzola.org) that are fast and offer a much better experience when developing. Typically documentation are static pages so they should be a perfect fit, except for one issue: automatic API reference generation. This was a big show stopper... until now!
+
+SnakeOil is an experiment to get to a place where using Hugo or Zola for python documentation generation is a viable option.
 
 
 (Currently mostly for shits and giggles, but who knows.)
+
+## Design goals:
+
+While the project might not cover all of these goals yet, these are some of the things I try to keep in mind when working on SnakeOil (in order of precedence):
+
+1. **Sensible defaults over infinite configurability**. Infinite configuration comes with a lot of complexity both for user and developer, and in my opinion it is not worth it, especially at the stage SnakeOil is at now. I'd rather do 10 things right 80% of the time, than 2 things right 99.999% of the time.
+2. **Correctness over speed** While speed is an explicit goal of this project, correctness should take precident. Doing the wrong thing extremely fast is useless.
+3. **Be fast** We only *parse* the source code to extract the docstrings from it, but we don't actually have to do any execution. While this might mean we can't always fully expand everything, type signatures are constants or names in the vast majority of cases, so this is a decent alternative. This by itself should make us Fast Enough :tm:
+4. **Be fun** This is a personal project for the time being, and I like to have fun with those.
+
+## Status
+
+Currently SnakeOil is solidly in the MVP state. While I am quite happy with it so far, you use it at your own risk. That said, I always welcome bug reports and feature requests if you do decide to try it! Below is a lose planning of the features I want to work on
+
+
+## Loose Roadmap:
+
+- [x] walk file tree to find python objects
+- [x] parse them to extract documentation
+- [x] dump documentation in similar file structure to original package
+- [ ] Fill out the CLI
+- [ ] Test output in SSG
+- [ ] Logging at appropriate levels
+- [ ] Parse/render docstring formats like numpy and google so we can render them better
+- [ ] Configuration file
+- [ ] Support multiple formats?
+- [ ] Do reference linking inside the docs
+- [ ] Do reference linking to external docs
+- [ ] Benchmarking & optimisation
+
+## FAQ
+
+### Is SnakeOil dead?
+
+No. It is a personal project for the time being so while there may be persiods of inactivity, I intend to keep working on it until it serves my personal needs. (Poe's law dictates that I mention this is mostly a joke. It's a common question for FOSS projects that don't have the high velocity of larger projects and this is a toughe and cheek way of beating this question to the punch)
+
+### When is the next release?
+
+To quote one of the giants in our field BurtnSushi:
+
+> ripgrep is a project whose contributors are volunteers. A release schedule adds undue stress to said volunteers. Therefore, releases are made on a best effort basis and no dates will ever be given.
+
+> An exception to this can be high impact bugs. If a ripgrep release contains a significant regression, then there will generally be a strong push to get a patch release out with a fix. However, no promises are made.
+
+(source: [ripgrep](https://github.com/BurntSushi/ripgrep/blob/94305125ef33b86151b6cd2ce2b33d641f6b6ac3/FAQ.md#release))
+
+
+The same applies to SnakeOil.
+
+### Why is it called SnakeOil?
+
+Two main reasons:
+
+1. You are trying to extract things from a snake (python) that may or may not be beneficial (documentation isn't always as helpful as we hope it will be).
+2. I find it funny
+
+So it's not because I am a snake oil salesperson in the colloquial sense.
+
+### Did people actually ask these questions?
+
+Not yet, but I suspect they will.
+
 
 ## Dev tools
 To develop snakeoil you'll want to have these tools installed:
@@ -28,11 +97,3 @@ If you have to publish, or otherwise fiddle with dependencies of snakeoil you'll
 ## Template
 
 This repo was initially setup using [`cargo-generate`](https://github.com/cargo-generate/cargo-generate) and [this template](https://github.com/savente93/rust-template)
-
-## Roadmap:
-
-- [x] walk file tree to find python objects
-- [x] parse them to extract documentation
-- [] dump documentation in similar file structure to original package
-- [] do parsing and reference linking inside the docs
-- [] Do actual type parsing so we can link to their docs
