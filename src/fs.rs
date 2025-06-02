@@ -233,16 +233,15 @@ pub fn walk_package(
 
     for entry in WalkDir::new(pkg_path)
         .into_iter()
-        .filter_entry(|e| should_exclude(e.path(), skip_private, &exclude))
+        .filter_entry(|e| should_include(e.path(), skip_private, &exclude))
     {
         let module_or_package = entry?;
         let module_or_package_path = module_or_package.path();
-        if is_private_module(module_or_package_path) && skip_private {
-            continue;
-        }
         if is_python_module(module_or_package_path)? {
+            tracing::debug!("Found submodule at: {}", &module_or_package_path.display());
             sub_modules.push(module_or_package_path.to_path_buf());
         } else {
+            tracing::debug!("Found subpackage at: {}", &module_or_package_path.display());
             sub_packages.push(module_or_package_path.to_path_buf());
         }
     }
@@ -253,12 +252,30 @@ pub fn walk_package(
     })
 }
 
-fn should_exclude(path: &Path, skip_private: bool, excluded: &[PathBuf]) -> bool {
-    (is_python_package(path).unwrap_or(false) || is_python_module(path).unwrap_or(false))
-        && (!is_private_module(path) || !skip_private)
-        && (!excluded
-            .iter()
-            .any(|excluded_path| path.ends_with(excluded_path)))
+fn should_include(path: &Path, skip_private: bool, excluded: &[PathBuf]) -> bool {
+    if !(is_python_package(path).unwrap_or(false) || is_python_module(path).unwrap_or(false)) {
+        tracing::info!(
+            "Skipping {} because it is not a python module or package",
+            &path.display()
+        );
+        return false;
+    }
+    if is_private_module(path) && skip_private {
+        tracing::info!("Skipping {} because it is is private", &path.display());
+        return false;
+    }
+    if excluded
+        .iter()
+        .any(|excluded_path| path.ends_with(excluded_path))
+    {
+        tracing::info!(
+            "Skipping {} because it was explicitly excluded",
+            &path.display()
+        );
+        return false;
+    }
+
+    true
 }
 
 #[cfg(test)]

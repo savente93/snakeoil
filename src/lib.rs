@@ -10,7 +10,7 @@ pub use crate::fs::{get_module_name, get_package_modules, walk_package};
 pub use crate::render::render_module;
 
 use color_eyre::Result;
-use fs::{get_python_prefix, is_private_module};
+use fs::get_python_prefix;
 use parsing::module::extract_module_documentation;
 use parsing::utils::parse_python_file;
 use render::translate_filename;
@@ -25,9 +25,13 @@ pub fn render_docs(
     let root = pkg_path.parent();
     let mut errored = vec![];
 
+    tracing::info!("indexing package at {}", &pkg_path.display());
     let pkg_index = walk_package(pkg_path, skip_private, exclude)?;
 
+    tracing::info!("Creating directories");
+
     for sub_pkg in pkg_index.package_paths {
+        tracing::debug!("Creating directory: {}", &sub_pkg.display());
         let rel_path = if let Some(r) = root {
             sub_pkg.strip_prefix(r)?
         } else {
@@ -36,21 +40,22 @@ pub fn render_docs(
         let full_path = out_path.join(rel_path);
         create_dir_all(&full_path)?;
     }
+    tracing::info!("done creating directories");
 
     for sub_module in pkg_index.module_paths {
+        tracing::info!("creating documentation for {}", &sub_module.display());
         let rel_path = if let Some(r) = root {
             sub_module.strip_prefix(r)?
         } else {
             &sub_module
         };
         let full_path = out_path.join(rel_path);
-        if is_private_module(&sub_module) && skip_private {
-            continue;
-        }
         let prefix = get_python_prefix(rel_path)?;
         let parsed = parse_python_file(&sub_module);
         match parsed {
             Ok(contents) => {
+                tracing::debug!("correctly parsed file {}", &sub_module.display());
+                tracing::debug!("extracting documentation...");
                 let module_name = get_module_name(&sub_module).ok();
                 let documentation = extract_module_documentation(
                     &contents,
@@ -59,8 +64,10 @@ pub fn render_docs(
                     skip_private,
                     skip_undoc,
                 );
+                tracing::debug!("rendering documentation...");
                 let rendered = render_module(documentation);
                 let new_path = translate_filename(&full_path);
+                tracing::debug!("writing rendered documentation too {}", &new_path.display());
                 let mut file = File::create(new_path)?;
                 file.write_all(rendered.as_bytes())?;
             }
