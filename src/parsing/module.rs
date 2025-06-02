@@ -58,27 +58,53 @@ fn extract_documentation_from_statements(
     for statement in statements {
         if let Stmt::FunctionDef(stmt_function_def) = statement {
             let function_doc: FunctionDocumentation = stmt_function_def.into();
-            if (function_doc.docstring.is_none() && skip_undoc)
-                || (is_private_function(&function_doc) && skip_private)
-            {
+            if function_doc.docstring.is_none() && skip_undoc {
+                tracing::debug!(
+                    "skipping function {} because it is undocumented",
+                    function_doc.name,
+                );
                 continue;
             };
+
+            if is_private_function(&function_doc) && skip_private {
+                tracing::debug!(
+                    "skipping function {} because it is private",
+                    function_doc.name,
+                );
+                continue;
+            }
             free_functions.push(function_doc);
         }
         if let Stmt::AsyncFunctionDef(stmt_async_function_def) = statement {
             let function_doc: FunctionDocumentation = stmt_async_function_def.into();
-            if (function_doc.docstring.is_none() && skip_undoc)
-                || (is_private_function(&function_doc) && skip_private)
-            {
+            if function_doc.docstring.is_none() && skip_undoc {
+                tracing::debug!(
+                    "skipping function {} because it is undocumented",
+                    function_doc.name,
+                );
                 continue;
             };
+
+            if is_private_function(&function_doc) && skip_private {
+                tracing::debug!(
+                    "skipping function {} because it is private",
+                    function_doc.name,
+                );
+                continue;
+            }
             free_functions.push(function_doc);
         }
         if let Stmt::ClassDef(stmt_class_def) = statement {
             let class_doc: ClassDocumentation = stmt_class_def.into();
-            if (class_doc.docstring.is_none() && skip_undoc)
-                || (is_private_class(&class_doc) && skip_private)
-            {
+            if is_private_class(&class_doc) && skip_private {
+                tracing::debug!("skipping class {} because it is private", class_doc.name,);
+                continue;
+            }
+            if class_doc.docstring.is_none() && skip_undoc {
+                tracing::debug!(
+                    "skipping function {} because it is undocumented",
+                    class_doc.name,
+                );
                 continue;
             };
             class_definitions.push(class_doc);
@@ -109,6 +135,42 @@ mod test {
         assert_eq!(docs.docstring, None);
         assert_eq!(docs.functions.len(), 0);
         assert_eq!(docs.classes.len(), 0);
+
+        Ok(())
+    }
+    #[test]
+    fn test_doc_extraction_skip_undoc_and_private_module() -> Result<()> {
+        let expr = parse(
+            r#"
+def foo():
+    """asdf"""
+    pass
+
+def _bar():
+    """asdf"""
+    pass
+
+def baz():
+    pass
+
+class Cls:
+    """normal class"""
+
+
+class _Cls:
+    """normal class"""
+
+class UndocClass:
+    pass
+"#,
+            Mode::Module,
+            "<embedded>",
+        )?;
+        let docs = extract_module_documentation(&expr, None, None, true, true);
+
+        assert_eq!(docs.docstring, None);
+        assert_eq!(docs.functions.len(), 1);
+        assert_eq!(docs.classes.len(), 1);
 
         Ok(())
     }
