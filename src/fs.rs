@@ -223,15 +223,18 @@ pub struct PackageIndex {
 /// will walk the provided path and index all the subpackages and modules
 /// # Errors
 /// Can error on fs errors
-pub fn walk_package(pkg_path: &Path, skip_private: bool) -> Result<PackageIndex> {
+pub fn walk_package(
+    pkg_path: &Path,
+    skip_private: bool,
+    exclude: Vec<PathBuf>,
+) -> Result<PackageIndex> {
     let mut sub_modules = vec![];
     let mut sub_packages = vec![];
 
-    for entry in WalkDir::new(pkg_path).into_iter().filter_entry(|e| {
-        (is_python_package(e.path()).unwrap_or(false)
-            || is_python_module(e.path()).unwrap_or(false))
-            && (!is_private_module(e.path()) || !skip_private)
-    }) {
+    for entry in WalkDir::new(pkg_path)
+        .into_iter()
+        .filter_entry(|e| should_exclude(e.path(), skip_private, &exclude))
+    {
         let module_or_package = entry?;
         let module_or_package_path = module_or_package.path();
         if is_private_module(module_or_package_path) && skip_private {
@@ -248,6 +251,14 @@ pub fn walk_package(pkg_path: &Path, skip_private: bool) -> Result<PackageIndex>
         module_paths: sub_modules,
         package_paths: sub_packages,
     })
+}
+
+fn should_exclude(path: &Path, skip_private: bool, excluded: &[PathBuf]) -> bool {
+    (is_python_package(path).unwrap_or(false) || is_python_module(path).unwrap_or(false))
+        && (!is_private_module(path) || !skip_private)
+        && (!excluded
+            .iter()
+            .any(|excluded_path| path.ends_with(excluded_path)))
 }
 
 #[cfg(test)]
@@ -397,7 +408,7 @@ mod test {
         let _ = File::create(sub_pkg_a_path.join("bar.py"))?;
         let _ = File::create(sub_pkg_b_path.join("baz.py"))?;
 
-        let mut index = walk_package(&root_pkg_path, false)?;
+        let mut index = walk_package(&root_pkg_path, false, vec![])?;
 
         index.module_paths.sort();
         index.package_paths.sort();

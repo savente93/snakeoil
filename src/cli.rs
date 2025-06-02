@@ -45,6 +45,10 @@ pub struct Args {
     /// Do not render private functions, classes or modules (who's name start with _)
     #[arg(long, default_value_t = false)]
     pub skip_private: bool,
+
+    /// Do not render private functions, classes or modules (who's name start with _)
+    #[arg(short, long)]
+    pub exclude: Vec<PathBuf>,
 }
 
 #[cfg(test)]

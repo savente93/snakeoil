@@ -20,11 +20,12 @@ pub fn render_docs(
     out_path: &Path,
     skip_private: bool,
     skip_undoc: bool,
+    exclude: Vec<PathBuf>,
 ) -> Result<Vec<PathBuf>> {
     let root = pkg_path.parent();
     let mut errored = vec![];
 
-    let pkg_index = walk_package(pkg_path, skip_private)?;
+    let pkg_index = walk_package(pkg_path, skip_private, exclude)?;
 
     for sub_pkg in pkg_index.package_paths {
         let rel_path = if let Some(r) = root {
@@ -51,7 +52,6 @@ pub fn render_docs(
         match parsed {
             Ok(contents) => {
                 let module_name = get_module_name(&sub_module).ok();
-                assert_ne!(&module_name, &Some(String::new()));
                 let documentation = extract_module_documentation(
                     &contents,
                     module_name,
@@ -189,7 +189,16 @@ mod test {
         let test_pkg_dir = PathBuf::from("tests/test_pkg");
         let expected_result_dir = PathBuf::from("tests/rendered_full");
 
-        render_docs(&test_pkg_dir, temp_dir.path(), false, false)?;
+        render_docs(
+            &test_pkg_dir,
+            temp_dir.path(),
+            false,
+            false,
+            vec![
+                PathBuf::from("test_pkg/excluded_file.py"),
+                PathBuf::from("test_pkg/excluded_module"),
+            ],
+        )?;
 
         assert_dir_trees_equal(temp_dir.path(), &expected_result_dir);
 
@@ -201,7 +210,16 @@ mod test {
         let test_pkg_dir = PathBuf::from("tests/test_pkg");
         let expected_result_dir = PathBuf::from("tests/rendered_no_private");
 
-        render_docs(&test_pkg_dir, temp_dir.path(), true, true)?;
+        render_docs(
+            &test_pkg_dir,
+            temp_dir.path(),
+            true,
+            true,
+            vec![
+                PathBuf::from("test_pkg/excluded_file.py"),
+                PathBuf::from("test_pkg/excluded_module"),
+            ],
+        )?;
 
         assert_dir_trees_equal(temp_dir.path(), &expected_result_dir);
 
@@ -212,7 +230,7 @@ mod test {
         let temp_dir = assert_fs::TempDir::new()?;
         let test_pkg_dir = PathBuf::from("tests/test_pkg");
 
-        render_docs(&test_pkg_dir, temp_dir.path(), false, false)?;
+        render_docs(&test_pkg_dir, temp_dir.path(), false, false, vec![])?;
 
         Ok(())
     }

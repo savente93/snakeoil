@@ -24,6 +24,7 @@ async fn main() -> Result<()> {
         &args.output_dir,
         args.skip_private,
         args.skip_undoc,
+        args.exclude,
     )?;
 
     Ok(())

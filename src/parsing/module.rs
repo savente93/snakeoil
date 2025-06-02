@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use rustpython_parser::ast::{Mod, Stmt};
 
 use super::{
@@ -13,6 +15,13 @@ pub struct ModuleDocumentation {
     pub docstring: Option<String>,
     pub functions: Vec<FunctionDocumentation>,
     pub classes: Vec<ClassDocumentation>,
+    pub sub_modules: Vec<ModuleReference>,
+}
+
+#[derive(Debug)]
+pub struct ModuleReference {
+    pub name: String,
+    pub path: PathBuf,
 }
 // just a conveneience function
 pub fn extract_module_documentation(
@@ -22,9 +31,6 @@ pub fn extract_module_documentation(
     skip_private: bool,
     skip_undoc: bool,
 ) -> ModuleDocumentation {
-    assert_ne!(name, Some(String::from("")));
-    assert_ne!(prefix, Some(String::from("")));
-
     if let Mod::Module(mod_module) = input_module {
         extract_documentation_from_statements(
             &mod_module.body,
@@ -79,15 +85,13 @@ fn extract_documentation_from_statements(
         }
     }
 
-    assert_ne!(name, Some(String::from("")));
-    assert_ne!(prefix, Some(String::from("")));
-
     ModuleDocumentation {
         name,
         prefix,
         docstring,
         functions: free_functions,
         classes: class_definitions,
+        sub_modules: vec![],
     }
 }
 
