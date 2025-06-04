@@ -100,7 +100,6 @@ pub fn render_expr(expr: Expr) -> String {
             out.push(']');
         }
         Expr::DictComp(expr_dict_comp) => {
-            dbg!(&expr_dict_comp);
             out.push('{');
             out.push_str(&render_expr(*expr_dict_comp.key));
             out.push_str(": ");
@@ -282,7 +281,7 @@ fn render_keyword(keyword: Keyword) -> String {
     out
 }
 
-fn render_constant(constant: Constant) -> String {
+pub(crate) fn render_constant(constant: Constant) -> String {
     match constant {
         Constant::None => String::from("None"),
         Constant::Bool(b) => {

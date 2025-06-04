@@ -24,13 +24,13 @@ pub fn translate_filename(path: &Path) -> PathBuf {
 
 pub fn render_module(mod_doc: ModuleDocumentation) -> String {
     let mut out = String::new();
-    let maybe_header = match (&mod_doc.prefix, &mod_doc.name) {
+    let maybe_qualifier = match (&mod_doc.prefix, &mod_doc.name) {
         (None, None) => None,
-        (None, Some(name)) => Some(format!("# {}\n", name)),
-        (Some(pref), None) => Some(format!("# {}\n", pref)),
-        (Some(pref), Some(name)) => Some(format!("# {}.{}\n", pref, name)),
+        (None, Some(name)) => Some(name.to_string()),
+        (Some(pref), None) => Some(pref.to_string()),
+        (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
     };
-
+    let maybe_header = maybe_qualifier.as_ref().map(|s| format!("# {}\n", s));
     if let Some(header) = maybe_header {
         out.push_str(&header);
     }
@@ -39,6 +39,17 @@ pub fn render_module(mod_doc: ModuleDocumentation) -> String {
         out.push('\n');
         out.push_str(docstring.trim());
         out.push('\n');
+    }
+
+    if let Some(exported) = mod_doc.exports {
+        out.push_str("\n## Exports:\n\n");
+        for export in exported {
+            let anchor = match &maybe_qualifier {
+                None => &export,
+                Some(a) => &format!("{}.{}", a, export),
+            };
+            out.push_str(&format!("- [{}](#{})\n", export, anchor));
+        }
     }
 
     for fn_docs in mod_doc.functions {
@@ -183,6 +194,8 @@ mod test {
 
 from typing import Any
 
+__all__ = ['foo']
+
 def foo(bar: int) -> Dict[str, Any]:
     '''this is a docstring for the foo function'''
 
@@ -233,6 +246,10 @@ class Greeter:
 
 This is a module that is used to test snakeoil.
 
+## Exports:
+
+- [foo](#snakeoil.testing.test_module.foo)
+
 ## snakeoil.testing.test_module.foo
 
 foo(bar: int) -> Dict[str, Any]
@@ -278,9 +295,13 @@ Callable[[], None]
 
         Ok(())
     }
-    fn expected_module_docs_no_prefix_rendered() -> &'static str {
+    fn expected_module_docs_no_prefix_no_name_rendered() -> &'static str {
         r#"
 This is a module that is used to test snakeoil.
+
+## Exports:
+
+- [foo](#foo)
 
 ## foo
 
@@ -310,6 +331,43 @@ Callable[[], None]
 "#
     }
 
+    fn expected_module_docs_only_prefix_rendered() -> &'static str {
+        r#"# snakeoil
+
+This is a module that is used to test snakeoil.
+
+## Exports:
+
+- [foo](#snakeoil.foo)
+
+## snakeoil.foo
+
+foo(bar: int) -> Dict[str, Any]
+
+this is a docstring for the foo function
+
+## snakeoil.Greeter
+
+this is a class docstring.
+
+### snakeoil.Greeter.greet
+
+greet(self, name, *args, foo: str = "bar", **kwargs) -> Callable[[], None]
+
+Greet the world.
+
+Parameters
+----------
+name: str
+    just a parameter. it's actually used for anything
+
+Returns
+-------
+Callable[[], None]
+    just a random closure to make the types interesting to render.
+"#
+    }
+
     #[test]
     fn render_module_documentation_no_prefix() -> Result<()> {
         let parsed = parse_python_str(test_dirty_module_str())?;
@@ -317,7 +375,74 @@ Callable[[], None]
 
         let rendered = render_module(mod_documentation);
 
-        assert_eq!(rendered, expected_module_docs_no_prefix_rendered());
+        assert_eq!(rendered, expected_module_docs_no_prefix_no_name_rendered());
+
+        Ok(())
+    }
+    #[test]
+    fn render_module_documentation_only_prefix() -> Result<()> {
+        let parsed = parse_python_str(test_dirty_module_str())?;
+        let mod_documentation = extract_module_documentation(
+            &parsed,
+            None,
+            Some(String::from("snakeoil")),
+            false,
+            false,
+        );
+
+        let rendered = render_module(mod_documentation);
+
+        assert_eq!(rendered, expected_module_docs_only_prefix_rendered());
+
+        Ok(())
+    }
+
+    fn expected_module_docs_only_name_rendered() -> &'static str {
+        r#"# snakeoil
+
+This is a module that is used to test snakeoil.
+
+## Exports:
+
+- [foo](#snakeoil.foo)
+
+## snakeoil.foo
+
+foo(bar: int) -> Dict[str, Any]
+
+this is a docstring for the foo function
+
+## snakeoil.Greeter
+
+this is a class docstring.
+
+### snakeoil.Greeter.greet
+
+greet(self, name, *args, foo: str = "bar", **kwargs) -> Callable[[], None]
+
+Greet the world.
+
+Parameters
+----------
+name: str
+    just a parameter. it's actually used for anything
+
+Returns
+-------
+Callable[[], None]
+    just a random closure to make the types interesting to render.
+"#
+    }
+
+    #[test]
+    fn render_module_documentation_only_name() -> Result<()> {
+        let parsed = parse_python_str(test_dirty_module_str())?;
+        let mod_documentation =
+            extract_module_documentation(&parsed, Some("snakeoil".to_string()), None, false, false);
+
+        let rendered = render_module(mod_documentation);
+
+        assert_eq!(rendered, expected_module_docs_only_name_rendered());
 
         Ok(())
     }

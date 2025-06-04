@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use rustpython_parser::ast::{Mod, Stmt};
+use color_eyre::{Result, eyre::eyre};
+use rustpython_parser::ast::{Mod, Stmt, StmtAssign};
 
 use super::{
     class::{ClassDocumentation, is_private_class},
@@ -16,6 +17,7 @@ pub struct ModuleDocumentation {
     pub functions: Vec<FunctionDocumentation>,
     pub classes: Vec<ClassDocumentation>,
     pub sub_modules: Vec<ModuleReference>,
+    pub exports: Option<Vec<String>>,
 }
 
 #[derive(Debug)]
@@ -43,6 +45,29 @@ pub fn extract_module_documentation(
         ModuleDocumentation::default()
     }
 }
+
+fn extract_exports_from_statement(statement: &StmtAssign) -> Result<Vec<String>> {
+    if !statement
+        .clone()
+        .targets
+        .into_iter()
+        .filter_map(|t| t.name_expr())
+        .any(|e| e.id == *"__all__")
+    {
+        return Err(eyre!("target of assignment was not __all__"));
+    };
+    match &*statement.value.clone() {
+        rustpython_parser::ast::Expr::List(expr_list) => Ok(expr_list
+            .elts
+            .iter()
+            .filter_map(|e| e.as_constant_expr())
+            .filter_map(|c| c.value.as_str())
+            .cloned()
+            .collect::<Vec<String>>()),
+        _ => Err(eyre!("__all__ assignment was not list")),
+    }
+}
+
 fn extract_documentation_from_statements(
     statements: &[Stmt],
     name: Option<String>,
@@ -54,8 +79,19 @@ fn extract_documentation_from_statements(
     assert_ne!(prefix, Some(String::from("")));
     let mut free_functions = vec![];
     let mut class_definitions = vec![];
+    let mut exports = None;
     let docstring = extract_docstring_from_body(statements);
     for statement in statements {
+        if let Stmt::Assign(stmt_assign) = statement {
+            match (&mut exports, extract_exports_from_statement(stmt_assign)) {
+                (None, Ok(exported)) => exports = Some(exported),
+                (Some(_), Ok(new_exported)) => {
+                    tracing::warn!("__all__ was defined multiple times.");
+                    exports = Some(new_exported);
+                }
+                _ => (),
+            }
+        }
         if let Stmt::FunctionDef(stmt_function_def) = statement {
             let function_doc: FunctionDocumentation = stmt_function_def.into();
             if function_doc.docstring.is_none() && skip_undoc {
@@ -117,7 +153,8 @@ fn extract_documentation_from_statements(
         docstring,
         functions: free_functions,
         classes: class_definitions,
-        sub_modules: vec![],
+        sub_modules: Vec::new(),
+        exports,
     }
 }
 
@@ -126,6 +163,7 @@ mod test {
     use super::*;
     use color_eyre::Result;
     use rustpython_parser::{Mode, parse};
+    use tracing_test::traced_test;
 
     #[test]
     fn test_doc_extraction_interactive_module() -> Result<()> {
@@ -171,6 +209,68 @@ class UndocClass:
         assert_eq!(docs.docstring, None);
         assert_eq!(docs.functions.len(), 1);
         assert_eq!(docs.classes.len(), 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_doc_extraction_exports() -> Result<()> {
+        let expr = parse(
+            r#"
+
+__all__ = ["a", "b", "c", "d", "foo", 4 , 5]
+
+a = 1
+b = 3
+c,d, foo = *bar
+"#,
+            Mode::Module,
+            "<embedded>",
+        )?;
+        let docs = extract_module_documentation(&expr, None, None, true, true);
+
+        assert_eq!(docs.exports.map(|e| e.len()), Some(5));
+
+        Ok(())
+    }
+    #[test]
+    #[traced_test]
+    fn test_doc_extraction_multiple_exports() -> Result<()> {
+        let expr = parse(
+            r#"
+
+__all__ = ["a"]
+__all__ = ["b"]
+
+a = 1
+b = 3
+"#,
+            Mode::Module,
+            "<embedded>",
+        )?;
+        let docs = extract_module_documentation(&expr, None, None, true, true);
+
+        assert_eq!(docs.exports, Some(vec![String::from("b")]));
+        assert!(logs_contain("__all__ was defined multiple times."));
+
+        Ok(())
+    }
+    #[test]
+    fn test_doc_extraction_export_non_list() -> Result<()> {
+        let expr = parse(
+            r#"
+
+__all__ = "a"
+
+a = 1
+b = 3
+"#,
+            Mode::Module,
+            "<embedded>",
+        )?;
+        let docs = extract_module_documentation(&expr, None, None, true, true);
+
+        assert_eq!(docs.exports, None);
 
         Ok(())
     }
