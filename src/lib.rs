@@ -7,6 +7,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 pub use crate::fs::{get_module_name, get_package_modules, walk_package};
+use crate::render::front_matter::FrontMatterFormat;
 pub use crate::render::render_module;
 
 use color_eyre::Result;
@@ -77,7 +78,7 @@ pub fn render_docs(
                     tmp_docs
                 };
                 tracing::debug!("rendering documentation...");
-                let rendered = render_module(documentation);
+                let rendered = render_module(documentation, FrontMatterFormat::PlainMarkdown);
                 let new_path = translate_filename(&full_path);
                 tracing::debug!("writing rendered documentation too {}", &new_path.display());
                 let mut file = File::create(new_path)?;
