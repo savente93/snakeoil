@@ -27,3 +27,10 @@ repos:
     rev: d0f10c617d701e29e5fbf153222a4e4120b994fa
     hooks:
       - id: commitlint
+  - repo: local
+    hooks:
+    - id: check-no-dbg
+      name: no dbg!
+      entry: bash -c 'rg --no-heading --line-number "dbg!" "$@" && echo "❌ dbg! found!" && exit 1 || exit 0'
+      language: system
+      files: \.rs$

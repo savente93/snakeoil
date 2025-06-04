@@ -274,13 +274,11 @@ pub fn walk_package(
         subs.extend(child_pkgs);
         subs.sort();
         subs.retain(|p| should_include(p, skip_private, &exclude));
-        dbg!(&subs);
         subs = subs
             .into_iter()
             .filter_map(|p| p.strip_prefix(sub_pkg).ok().map(|s| s.to_path_buf()))
             .map(|p| translate_filename(&p).to_path_buf())
             .collect();
-        dbg!(&subs);
         let _entry = sub_modules.insert(sub_pkg.clone(), subs);
     }
 
