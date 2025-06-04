@@ -3,3 +3,8 @@
 sub2 subpackage initialization.
 
 Marks sub2 as a package.
+
+## Submodules:
+
+- [one](one.md)
+- [two](two.md)

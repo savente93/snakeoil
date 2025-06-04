@@ -28,6 +28,7 @@ pub fn render_docs(
     tracing::info!("indexing package at {}", &pkg_path.display());
     let pkg_index = walk_package(pkg_path, skip_private, exclude)?;
 
+    dbg!(&pkg_index);
     tracing::info!("Creating directories");
 
     for sub_pkg in pkg_index.package_paths {
@@ -57,13 +58,26 @@ pub fn render_docs(
                 tracing::debug!("correctly parsed file {}", &sub_module.display());
                 tracing::debug!("extracting documentation...");
                 let module_name = get_module_name(&sub_module).ok();
-                let documentation = extract_module_documentation(
-                    &contents,
-                    module_name,
-                    prefix,
-                    skip_private,
-                    skip_undoc,
-                );
+                let documentation = {
+                    // extra scope is so docs doesn't have to be mutable for the
+                    // whole rest of the function
+                    let mut tmp_docs = extract_module_documentation(
+                        &contents,
+                        module_name,
+                        prefix,
+                        skip_private,
+                        skip_undoc,
+                    );
+                    if sub_module.ends_with("__init__.py") {
+                        if let Some(dir) = &sub_module.parent() {
+                            tmp_docs.with_sub_modules(
+                                pkg_index.sub_module_index.get(&dir.to_path_buf()),
+                            );
+                        }
+                    }
+                    tmp_docs
+                };
+                dbg!(&documentation.name, &documentation.sub_modules);
                 tracing::debug!("rendering documentation...");
                 let rendered = render_module(documentation);
                 let new_path = translate_filename(&full_path);

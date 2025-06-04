@@ -75,6 +75,24 @@ pub fn render_module(mod_doc: ModuleDocumentation) -> String {
         out.push('\n');
     }
 
+    if let Some(sub_modules) = &mod_doc.sub_modules {
+        out.push_str("\n## Submodules:\n\n");
+        for sub_mod in sub_modules {
+            let name = if sub_mod.ends_with("_index.md") {
+                sub_mod
+                    .parent()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or_default()
+            } else {
+                sub_mod
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or_default()
+            };
+            out.push_str(&format!("- [{}]({})\n", &name, &sub_mod.display()));
+        }
+    }
+
     out
 }
 
@@ -142,8 +160,8 @@ fn render_function_docs(
     out.push('(');
     out.push_str(&render_args(fn_docs.args));
     out.push(')');
-    if let Some(return_annotaiton) = fn_docs.return_type {
-        out.push_str(&format!(" -> {}", render_expr(return_annotaiton)));
+    if let Some(return_annotation) = fn_docs.return_type {
+        out.push_str(&format!(" -> {}", render_expr(return_annotation)));
     }
     out.push('\n');
 
