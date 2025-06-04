@@ -22,6 +22,7 @@ pub fn render_docs(
     skip_private: bool,
     skip_undoc: bool,
     exclude: Vec<PathBuf>,
+    format: FrontMatterFormat,
 ) -> Result<Vec<PathBuf>> {
     let root = pkg_path.parent();
     let mut errored = vec![];
@@ -78,7 +79,7 @@ pub fn render_docs(
                     tmp_docs
                 };
                 tracing::debug!("rendering documentation...");
-                let rendered = render_module(documentation, FrontMatterFormat::PlainMarkdown);
+                let rendered = render_module(documentation, format);
                 let new_path = translate_filename(&full_path);
                 tracing::debug!("writing rendered documentation too {}", &new_path.display());
                 let mut file = File::create(new_path)?;
@@ -103,6 +104,7 @@ mod test {
 
     use std::path::{Path, PathBuf};
 
+    use crate::render::front_matter::FrontMatterFormat;
     use crate::render_docs;
 
     use pretty_assertions::assert_eq;
@@ -218,6 +220,7 @@ mod test {
                 PathBuf::from("test_pkg/excluded_file.py"),
                 PathBuf::from("test_pkg/excluded_module"),
             ],
+            FrontMatterFormat::Markdown,
         )?;
 
         assert_dir_trees_equal(temp_dir.path(), &expected_result_dir);
@@ -239,6 +242,7 @@ mod test {
                 PathBuf::from("test_pkg/excluded_file.py"),
                 PathBuf::from("test_pkg/excluded_module"),
             ],
+            FrontMatterFormat::Markdown,
         )?;
 
         assert_dir_trees_equal(temp_dir.path(), &expected_result_dir);
@@ -250,7 +254,14 @@ mod test {
         let temp_dir = assert_fs::TempDir::new()?;
         let test_pkg_dir = PathBuf::from("tests/test_pkg");
 
-        render_docs(&test_pkg_dir, temp_dir.path(), false, false, vec![])?;
+        render_docs(
+            &test_pkg_dir,
+            temp_dir.path(),
+            false,
+            false,
+            vec![],
+            FrontMatterFormat::Markdown,
+        )?;
 
         Ok(())
     }

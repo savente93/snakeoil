@@ -312,7 +312,7 @@ Callable[[], None]
             false,
         );
 
-        let rendered = render_module(mod_documentation, FrontMatterFormat::PlainMarkdown);
+        let rendered = render_module(mod_documentation, FrontMatterFormat::Markdown);
 
         assert_eq!(rendered, expected_module_docs_rendered());
 
@@ -396,7 +396,7 @@ Callable[[], None]
         let parsed = parse_python_str(test_dirty_module_str())?;
         let mod_documentation = extract_module_documentation(&parsed, None, None, false, false);
 
-        let rendered = render_module(mod_documentation, FrontMatterFormat::PlainMarkdown);
+        let rendered = render_module(mod_documentation, FrontMatterFormat::Markdown);
 
         assert_eq!(rendered, expected_module_docs_no_prefix_no_name_rendered());
 
@@ -413,7 +413,7 @@ Callable[[], None]
             false,
         );
 
-        let rendered = render_module(mod_documentation, FrontMatterFormat::PlainMarkdown);
+        let rendered = render_module(mod_documentation, FrontMatterFormat::Markdown);
 
         assert_eq!(rendered, expected_module_docs_only_prefix_rendered());
 
@@ -463,7 +463,7 @@ Callable[[], None]
         let mod_documentation =
             extract_module_documentation(&parsed, Some("snakeoil".to_string()), None, false, false);
 
-        let rendered = render_module(mod_documentation, FrontMatterFormat::PlainMarkdown);
+        let rendered = render_module(mod_documentation, FrontMatterFormat::Markdown);
 
         assert_eq!(rendered, expected_module_docs_only_name_rendered());
 
