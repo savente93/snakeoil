@@ -1,5 +1,6 @@
 pub mod args;
 pub mod expr;
+pub mod front_matter;
 
 use std::{
     ffi::OsStr,
@@ -9,8 +10,11 @@ use std::{
 use args::render_args;
 use expr::render_expr;
 
-use crate::parsing::{
-    class::ClassDocumentation, function::FunctionDocumentation, module::ModuleDocumentation,
+use crate::{
+    parsing::{
+        class::ClassDocumentation, function::FunctionDocumentation, module::ModuleDocumentation,
+    },
+    render::front_matter::{FrontMatterFormat, render_front_matter},
 };
 
 pub fn translate_filename(path: &Path) -> PathBuf {
@@ -22,7 +26,7 @@ pub fn translate_filename(path: &Path) -> PathBuf {
     translated
 }
 
-pub fn render_module(mod_doc: ModuleDocumentation) -> String {
+pub fn render_module(mod_doc: ModuleDocumentation, format: FrontMatterFormat) -> String {
     let mut out = String::new();
     let maybe_qualifier = match (&mod_doc.prefix, &mod_doc.name) {
         (None, None) => None,
@@ -30,9 +34,10 @@ pub fn render_module(mod_doc: ModuleDocumentation) -> String {
         (Some(pref), None) => Some(pref.to_string()),
         (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
     };
-    let maybe_header = maybe_qualifier.as_ref().map(|s| format!("# {}\n", s));
-    if let Some(header) = maybe_header {
-        out.push_str(&header);
+
+    let front_matter_str = render_front_matter(&maybe_qualifier, format);
+    if !front_matter_str.is_empty() {
+        out.push_str(&front_matter_str);
     }
 
     if let Some(docstring) = &mod_doc.docstring {
@@ -205,7 +210,7 @@ mod test {
 
     use crate::{
         parsing::{module::extract_module_documentation, utils::parse_python_str},
-        render::{render_module, translate_filename},
+        render::{front_matter::FrontMatterFormat, render_module, translate_filename},
     };
     fn test_dirty_module_str() -> &'static str {
         r"'''This is a module that is used to test snakeoil.'''
@@ -307,7 +312,7 @@ Callable[[], None]
             false,
         );
 
-        let rendered = render_module(mod_documentation);
+        let rendered = render_module(mod_documentation, FrontMatterFormat::PlainMarkdown);
 
         assert_eq!(rendered, expected_module_docs_rendered());
 
@@ -391,7 +396,7 @@ Callable[[], None]
         let parsed = parse_python_str(test_dirty_module_str())?;
         let mod_documentation = extract_module_documentation(&parsed, None, None, false, false);
 
-        let rendered = render_module(mod_documentation);
+        let rendered = render_module(mod_documentation, FrontMatterFormat::PlainMarkdown);
 
         assert_eq!(rendered, expected_module_docs_no_prefix_no_name_rendered());
 
@@ -408,7 +413,7 @@ Callable[[], None]
             false,
         );
 
-        let rendered = render_module(mod_documentation);
+        let rendered = render_module(mod_documentation, FrontMatterFormat::PlainMarkdown);
 
         assert_eq!(rendered, expected_module_docs_only_prefix_rendered());
 
@@ -458,7 +463,7 @@ Callable[[], None]
         let mod_documentation =
             extract_module_documentation(&parsed, Some("snakeoil".to_string()), None, false, false);
 
-        let rendered = render_module(mod_documentation);
+        let rendered = render_module(mod_documentation, FrontMatterFormat::PlainMarkdown);
 
         assert_eq!(rendered, expected_module_docs_only_name_rendered());
 
