@@ -456,6 +456,44 @@ Callable[[], None]
     just a random closure to make the types interesting to render.
 "#
     }
+    fn expected_module_docs_only_name_zola_rendered() -> &'static str {
+        r#"+++
+title = "snakedown"
++++
+
+This is a module that is used to test snakedown.
+
+## Exports:
+
+- [foo](#snakedown.foo)
+
+## snakedown.foo
+
+foo(bar: int) -> Dict[str, Any]
+
+this is a docstring for the foo function
+
+## snakedown.Greeter
+
+this is a class docstring.
+
+### snakedown.Greeter.greet
+
+greet(self, name, *args, foo: str = "bar", **kwargs) -> Callable[[], None]
+
+Greet the world.
+
+Parameters
+----------
+name: str
+    just a parameter. it's actually used for anything
+
+Returns
+-------
+Callable[[], None]
+    just a random closure to make the types interesting to render.
+"#
+    }
 
     #[test]
     fn render_module_documentation_only_name() -> Result<()> {
@@ -471,6 +509,23 @@ Callable[[], None]
         let rendered = render_module(mod_documentation, FrontMatterFormat::Markdown);
 
         assert_eq!(rendered, expected_module_docs_only_name_rendered());
+
+        Ok(())
+    }
+    #[test]
+    fn render_module_documentation_only_name_zola() -> Result<()> {
+        let parsed = parse_python_str(test_dirty_module_str())?;
+        let mod_documentation = extract_module_documentation(
+            &parsed,
+            Some("snakedown".to_string()),
+            None,
+            false,
+            false,
+        );
+
+        let rendered = render_module(mod_documentation, FrontMatterFormat::Zola);
+
+        assert_eq!(rendered, expected_module_docs_only_name_zola_rendered());
 
         Ok(())
     }
