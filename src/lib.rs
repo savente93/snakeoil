@@ -28,7 +28,6 @@ pub fn render_docs(
     tracing::info!("indexing package at {}", &pkg_path.display());
     let pkg_index = walk_package(pkg_path, skip_private, exclude)?;
 
-    dbg!(&pkg_index);
     tracing::info!("Creating directories");
 
     for sub_pkg in pkg_index.package_paths {
@@ -77,7 +76,6 @@ pub fn render_docs(
                     }
                     tmp_docs
                 };
-                dbg!(&documentation.name, &documentation.sub_modules);
                 tracing::debug!("rendering documentation...");
                 let rendered = render_module(documentation);
                 let new_path = translate_filename(&full_path);
