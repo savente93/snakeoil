@@ -16,7 +16,7 @@ pub struct ModuleDocumentation {
     pub docstring: Option<String>,
     pub functions: Vec<FunctionDocumentation>,
     pub classes: Vec<ClassDocumentation>,
-    pub sub_modules: Vec<ModuleReference>,
+    pub sub_modules: Option<Vec<PathBuf>>,
     pub exports: Option<Vec<String>>,
 }
 
@@ -25,6 +25,17 @@ pub struct ModuleReference {
     pub name: String,
     pub path: PathBuf,
 }
+
+// This one is the only gets done separately because it we can't deduce it from the file
+// contents themselves, we have to walk the fs for it, so we add a convenience
+// function so we can add that after the fact
+impl ModuleDocumentation {
+    pub fn with_sub_modules(&mut self, subs: Option<&Vec<PathBuf>>) -> &mut Self {
+        self.sub_modules = subs.cloned();
+        self
+    }
+}
+
 // just a conveneience function
 pub fn extract_module_documentation(
     input_module: &Mod,
@@ -153,7 +164,7 @@ fn extract_documentation_from_statements(
         docstring,
         functions: free_functions,
         classes: class_definitions,
-        sub_modules: Vec::new(),
+        sub_modules: None,
         exports,
     }
 }
