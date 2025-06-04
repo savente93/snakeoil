@@ -4,6 +4,7 @@ coverage:
   range: 85..100
   round: down
   precision: 1
+  patch: off
   status:
     # ref: https://docs.codecov.com/docs/commit-status
     project:
