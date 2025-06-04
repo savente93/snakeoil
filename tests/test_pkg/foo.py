@@ -4,6 +4,8 @@ foo.py
 Example module demonstrating a calculator.
 """
 
+__all__ = ["add", "multiply"]
+
 
 def add(a: float, b: float) -> float:
     """
