@@ -6,16 +6,22 @@ log := "warn"
 
 alias b := build
 alias t := test
-alias c := check
 alias l := lint
+alias fl := fix-lint
 
 export JUST_LOG := log
 
 lint:
     cargo clippy --all --all-targets --all-features -- --deny warnings
     cargo fmt --all -- --check
+    typos .
+    taplo fmt --check .
+
+fix-lint:
+    cargo fmt --all
     typos -w .
-    taplo fmt .
+    taplo fmt --check .
+    cargo clippy --fix
 
 
 # Run tests
@@ -43,10 +49,6 @@ cov:
 clean:
     cargo clean
 
-# Check for errors without building (quick dev check)
-check:
-    cargo check
-
 newest:
     cargo upgrade --incompatible --recursive
     cargo +nightly update --breaking -Z unstable-options
@@ -64,7 +66,11 @@ install-dev-tools:
     cargo binstall bacon -y
 
 # Run all quality checks: fmt, lint, check, test
-ci:
-    just lint
-    just check
-    just test
+ci: lint test
+
+pr: ci
+    # bit hacky but this should at least work across shells
+    # checks if there is a pr open from the current branch and if not opens one for you
+    # will only happen if lint and test pass
+    gh pr list --head "$(git rev-parse --abbrev-ref HEAD)" --json author --jq ". == []" | grep -q "true"
+    gh pr create --web --fill-first
