@@ -1,16 +1,18 @@
 # ref: https://docs.codecov.com/docs/codecovyml-reference
 coverage:
   # Hold ourselves to a high bar
-  range: 85..100
+  range: 80..90
   round: down
   precision: 1
-  patch: off
   status:
     # ref: https://docs.codecov.com/docs/commit-status
     project:
       default:
         # Avoid false negatives
         threshold: 1%
+    patch:
+      default:
+        informational: true
 
 ignore:
   - "src/bin" # don't consider binaries in coverage report
