@@ -47,7 +47,7 @@ pub struct Args {
     #[arg(long, default_value_t = false)]
     pub skip_private: bool,
 
-    /// Do not render private functions, classes or modules (who's name start with _)
+    /// any files that should be excluded, can be file or directories and specific multiple times but currently globs are not supported
     #[arg(short, long)]
     pub exclude: Vec<PathBuf>,
 
