@@ -68,9 +68,10 @@ install-dev-tools:
 # Run all quality checks: fmt, lint, check, test
 ci: lint test
 
+# bit hacky but this should at least work across shells
+# checks if there is a pr open from the current branch and if not opens one for you
+# will only happen if lint and test pass and there are not uncommitted changes to tracked files
 pr: ci
-    # bit hacky but this should at least work across shells
-    # checks if there is a pr open from the current branch and if not opens one for you
-    # will only happen if lint and test pass
     gh pr list --head "$(git rev-parse --abbrev-ref HEAD)" --json author --jq ". == []" | grep -q "true"
+    git diff-index --quiet HEAD --
     gh pr create --web --fill-first
