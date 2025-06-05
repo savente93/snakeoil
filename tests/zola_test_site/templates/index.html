@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>SnakeDown</title>
+</head>
+
+<body>
+  <section class="section">
+    <div class="container">
+      {% block content %}
+      <h1>{{section.title}}</h1>
+      {{section.content | safe}}
+      {% for post in section.pages %}
+        <ul>
+          <li><a href="{{ post.permalink }}">{{ post.title }}</a></li>
+        </ul
+      {% endfor %}
+
+      {% endblock content %}
+    </div>
+  </section>
+</body>
+
+</html>
