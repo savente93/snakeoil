@@ -213,7 +213,7 @@ mod test {
         render::{front_matter::FrontMatterFormat, render_module, translate_filename},
     };
     fn test_dirty_module_str() -> &'static str {
-        r"'''This is a module that is used to test snakeoil.'''
+        r"'''This is a module that is used to test snakedown.'''
 
 from typing import Any
 
@@ -265,25 +265,25 @@ class Greeter:
     }
 
     fn expected_module_docs_rendered() -> &'static str {
-        r#"# snakeoil.testing.test_module
+        r#"# snakedown.testing.test_module
 
-This is a module that is used to test snakeoil.
+This is a module that is used to test snakedown.
 
 ## Exports:
 
-- [foo](#snakeoil.testing.test_module.foo)
+- [foo](#snakedown.testing.test_module.foo)
 
-## snakeoil.testing.test_module.foo
+## snakedown.testing.test_module.foo
 
 foo(bar: int) -> Dict[str, Any]
 
 this is a docstring for the foo function
 
-## snakeoil.testing.test_module.Greeter
+## snakedown.testing.test_module.Greeter
 
 this is a class docstring.
 
-### snakeoil.testing.test_module.Greeter.greet
+### snakedown.testing.test_module.Greeter.greet
 
 greet(self, name, *args, foo: str = "bar", **kwargs) -> Callable[[], None]
 
@@ -307,7 +307,7 @@ Callable[[], None]
         let mod_documentation = extract_module_documentation(
             &parsed,
             Some(String::from("test_module")),
-            Some(String::from("snakeoil.testing")),
+            Some(String::from("snakedown.testing")),
             false,
             false,
         );
@@ -320,7 +320,7 @@ Callable[[], None]
     }
     fn expected_module_docs_no_prefix_no_name_rendered() -> &'static str {
         r#"
-This is a module that is used to test snakeoil.
+This is a module that is used to test snakedown.
 
 ## Exports:
 
@@ -355,25 +355,25 @@ Callable[[], None]
     }
 
     fn expected_module_docs_only_prefix_rendered() -> &'static str {
-        r#"# snakeoil
+        r#"# snakedown
 
-This is a module that is used to test snakeoil.
+This is a module that is used to test snakedown.
 
 ## Exports:
 
-- [foo](#snakeoil.foo)
+- [foo](#snakedown.foo)
 
-## snakeoil.foo
+## snakedown.foo
 
 foo(bar: int) -> Dict[str, Any]
 
 this is a docstring for the foo function
 
-## snakeoil.Greeter
+## snakedown.Greeter
 
 this is a class docstring.
 
-### snakeoil.Greeter.greet
+### snakedown.Greeter.greet
 
 greet(self, name, *args, foo: str = "bar", **kwargs) -> Callable[[], None]
 
@@ -408,7 +408,7 @@ Callable[[], None]
         let mod_documentation = extract_module_documentation(
             &parsed,
             None,
-            Some(String::from("snakeoil")),
+            Some(String::from("snakedown")),
             false,
             false,
         );
@@ -421,25 +421,25 @@ Callable[[], None]
     }
 
     fn expected_module_docs_only_name_rendered() -> &'static str {
-        r#"# snakeoil
+        r#"# snakedown
 
-This is a module that is used to test snakeoil.
+This is a module that is used to test snakedown.
 
 ## Exports:
 
-- [foo](#snakeoil.foo)
+- [foo](#snakedown.foo)
 
-## snakeoil.foo
+## snakedown.foo
 
 foo(bar: int) -> Dict[str, Any]
 
 this is a docstring for the foo function
 
-## snakeoil.Greeter
+## snakedown.Greeter
 
 this is a class docstring.
 
-### snakeoil.Greeter.greet
+### snakedown.Greeter.greet
 
 greet(self, name, *args, foo: str = "bar", **kwargs) -> Callable[[], None]
 
@@ -460,8 +460,13 @@ Callable[[], None]
     #[test]
     fn render_module_documentation_only_name() -> Result<()> {
         let parsed = parse_python_str(test_dirty_module_str())?;
-        let mod_documentation =
-            extract_module_documentation(&parsed, Some("snakeoil".to_string()), None, false, false);
+        let mod_documentation = extract_module_documentation(
+            &parsed,
+            Some("snakedown".to_string()),
+            None,
+            false,
+            false,
+        );
 
         let rendered = render_module(mod_documentation, FrontMatterFormat::Markdown);
 

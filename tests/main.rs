@@ -7,7 +7,7 @@ use tempfile::tempdir;
 fn test_cli_with_all_options() -> Result<()> {
     let tempdir = tempdir()?;
 
-    let mut cmd = Command::cargo_bin("snakeoil")?;
+    let mut cmd = Command::cargo_bin("snakedown")?;
     cmd.arg("tests/test_pkg")
         .arg(tempdir.path())
         .arg("--skip-undoc")

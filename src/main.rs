@@ -1,5 +1,5 @@
 use color_eyre::eyre::Result;
-use snakeoil::render_docs;
+use snakedown::render_docs;
 use tracing::subscriber::set_global_default;
 
 mod cli;

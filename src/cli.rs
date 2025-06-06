@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use clap_verbosity_flag::{LogLevel, Verbosity, VerbosityFilter};
-use snakeoil::render::front_matter::FrontMatterFormat;
+use snakedown::render::front_matter::FrontMatterFormat;
 
 #[allow(dead_code)]
 pub struct CustomLogLevel {}
@@ -103,7 +103,7 @@ mod tests {
     #[test]
     fn test_args_all_flags() -> Result<()> {
         let args = Args::parse_from([
-            "snakeoil",
+            "snakedown",
             "src/pkg",
             "dist",
             "--skip-undoc",
