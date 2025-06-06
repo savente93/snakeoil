@@ -31,6 +31,11 @@ jobs:
         if: hashFiles('Cargo.lock') == ''
         run: cargo generate-lockfile
       # https://twitter.com/jonhoo/status/1571290371124260865
+      # install zola which we need for the integration test
+      - name: Install Zola
+        uses: taiki-e/install-action@v2
+        with:
+            tool: zola@0.19.1
       - name: cargo test --locked
         run: cargo test --locked --all-features --all-targets
       # https://github.com/rust-lang/cargo/issues/6669
@@ -70,6 +75,10 @@ jobs:
           components: llvm-tools-preview
       - name: cargo install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Install Zola
+        uses: taiki-e/install-action@v2
+        with:
+            tool: zola@0.19.1
       - name: cargo generate-lockfile
         if: hashFiles('Cargo.lock') == ''
         run: cargo generate-lockfile
