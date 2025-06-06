@@ -85,7 +85,7 @@ pub fn get_python_prefix(rel_path: &Path) -> Result<Option<String>> {
 
 /// determines the name of a python module which is the file stem of the .py file
 /// ```
-/// # use snakeoil::fs::get_module_name;
+/// # use snakedown::fs::get_module_name;
 /// # use color_eyre::Result;
 /// # use assert_fs::prelude::*;
 /// # fn foo() -> Result<()> {
@@ -140,7 +140,7 @@ pub fn create_empty_python_package_on_disk(root: &Path) -> Result<()> {
 
 /// determines all the submodules of a package (not recursively)
 /// ```
-/// # use snakeoil::fs::{get_package_modules, create_empty_python_package_on_disk};
+/// # use snakedown::fs::{get_package_modules, create_empty_python_package_on_disk};
 /// # use color_eyre::Result;
 /// # use assert_fs::prelude::*;
 /// # use std::fs::File;
@@ -182,7 +182,7 @@ pub fn get_package_modules(pkg_path: &Path) -> Result<Vec<PathBuf>> {
 
 /// determines all the subpackages of a package (not recursively)
 /// ```
-/// # use snakeoil::fs::{get_subpackages, create_empty_python_package_on_disk};
+/// # use snakedown::fs::{get_subpackages, create_empty_python_package_on_disk};
 /// # use color_eyre::Result;
 /// # use assert_fs::prelude::*;
 /// # fn foo() -> Result<()> {
