@@ -1,3 +1,4 @@
+default_install_hook_types: [pre-commit, commit-msg]
 repos:
   - repo: https://github.com/doublify/pre-commit-rust
     rev: v1.0
@@ -23,10 +24,10 @@ repos:
     rev: v1.31.2
     hooks:
       - id: typos
-  - repo: https://github.com/savente93/commitlint-rs
-    rev: d0f10c617d701e29e5fbf153222a4e4120b994fa
+  - repo: https://github.com/crate-ci/committed
+    rev: v1.1.7
     hooks:
-      - id: commitlint
+      - id: committed
   - repo: local
     hooks:
     - id: check-no-dbg
