@@ -1,5 +1,5 @@
-mod plain;
-mod zola;
+pub mod plain;
+pub mod zola;
 
 use clap::ValueEnum;
 use plain::render_plain_front_matter;

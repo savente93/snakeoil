@@ -2,6 +2,7 @@ pub mod args;
 pub mod expr;
 pub mod front_matter;
 
+use crate::render::front_matter::zola::{render_zola_anchor, render_zola_anchor_id};
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
@@ -53,7 +54,16 @@ pub fn render_module(mod_doc: ModuleDocumentation, format: FrontMatterFormat) ->
                 None => &export,
                 Some(a) => &format!("{}.{}", a, export),
             };
-            out.push_str(&format!("- [{}](#{})\n", export, anchor));
+            match format {
+                FrontMatterFormat::Markdown => {
+                    out.push_str(&format!("- [{}](#{})\n", export, anchor))
+                }
+                FrontMatterFormat::Zola => out.push_str(&format!(
+                    "- [{}](#{})\n",
+                    export,
+                    render_zola_anchor_id(anchor)
+                )),
+            }
         }
     }
 
@@ -65,7 +75,7 @@ pub fn render_module(mod_doc: ModuleDocumentation, format: FrontMatterFormat) ->
             (Some(pref), None) => Some(pref.clone()),
             (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
         };
-        out.push_str(render_function_docs(fn_docs, &sub_prefix, 2).trim_end());
+        out.push_str(render_function_docs(fn_docs, &sub_prefix, 2, format).trim_end());
         out.push('\n');
     }
 
@@ -76,7 +86,7 @@ pub fn render_module(mod_doc: ModuleDocumentation, format: FrontMatterFormat) ->
             (Some(pref), None) => Some(pref.clone()),
             (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
         };
-        out.push_str(render_class_docs(class_docs, &sub_prefix, 2).trim_end());
+        out.push_str(render_class_docs(class_docs, &sub_prefix, 2, format).trim_end());
         out.push('\n');
     }
 
@@ -94,7 +104,12 @@ pub fn render_module(mod_doc: ModuleDocumentation, format: FrontMatterFormat) ->
                     .and_then(|s| s.to_str())
                     .unwrap_or_default()
             };
-            out.push_str(&format!("- [{}]({})\n", &name, &sub_mod.display()));
+            match format {
+                FrontMatterFormat::Zola => {
+                    out.push_str(&format!("- [{}]({})\n", &name, &sub_mod.display()))
+                }
+                _ => out.push_str(&format!("- [{}]({})\n", &name, &sub_mod.display())),
+            };
         }
     }
 
@@ -105,6 +120,7 @@ fn render_class_docs(
     class_docs: ClassDocumentation,
     prefix: &Option<String>,
     header_level: usize,
+    format: FrontMatterFormat,
 ) -> String {
     let mut out = String::new();
     out.push('\n');
@@ -117,6 +133,10 @@ fn render_class_docs(
     out.push(' ');
 
     out.push_str(&fully_qualified_class_name);
+    if format == FrontMatterFormat::Zola {
+        out.push(' ');
+        out.push_str(&render_zola_anchor(&fully_qualified_class_name));
+    }
     out.push('\n');
 
     if let Some(docstring) = class_docs.docstring {
@@ -137,7 +157,9 @@ fn render_class_docs(
     };
     for fn_docs in class_docs.methods {
         out.push('\n');
-        out.push_str(render_function_docs(fn_docs, &method_prefix, header_level + 1).trim());
+        out.push_str(
+            render_function_docs(fn_docs, &method_prefix, header_level + 1, format).trim(),
+        );
         out.push('\n');
     }
     out
@@ -147,6 +169,7 @@ fn render_function_docs(
     fn_docs: FunctionDocumentation,
     prefix: &Option<String>,
     header_level: usize,
+    format: FrontMatterFormat,
 ) -> String {
     let mut out = String::new();
 
@@ -159,6 +182,11 @@ fn render_function_docs(
     out.push(' ');
 
     out.push_str(&fully_qualified_function_name);
+    if format == FrontMatterFormat::Zola {
+        out.push(' ');
+        out.push_str(&render_zola_anchor(&fully_qualified_function_name))
+    }
+
     out.push('\n');
     out.push('\n');
     out.push_str(&fn_docs.name);
@@ -456,7 +484,7 @@ Callable[[], None]
     just a random closure to make the types interesting to render.
 "#
     }
-    fn expected_module_docs_only_name_zola_rendered() -> &'static str {
+    fn expected_module_docs_zola_rendered() -> &'static str {
         r#"+++
 title = "snakedown"
 +++
@@ -465,19 +493,19 @@ This is a module that is used to test snakedown.
 
 ## Exports:
 
-- [foo](#snakedown.foo)
+- [foo](#snakedownfoo)
 
-## snakedown.foo
+## snakedown.foo {#snakedownfoo}
 
 foo(bar: int) -> Dict[str, Any]
 
 this is a docstring for the foo function
 
-## snakedown.Greeter
+## snakedown.Greeter {#snakedowngreeter}
 
 this is a class docstring.
 
-### snakedown.Greeter.greet
+### snakedown.Greeter.greet {#snakedowngreetergreet}
 
 greet(self, name, *args, foo: str = "bar", **kwargs) -> Callable[[], None]
 
@@ -513,11 +541,11 @@ Callable[[], None]
         Ok(())
     }
     #[test]
-    fn render_module_documentation_only_name_zola() -> Result<()> {
+    fn render_module_documentation_zola() -> Result<()> {
         let parsed = parse_python_str(test_dirty_module_str())?;
         let mod_documentation = extract_module_documentation(
             &parsed,
-            Some("snakedown".to_string()),
+            Some(String::from("snakedown")),
             None,
             false,
             false,
@@ -525,7 +553,7 @@ Callable[[], None]
 
         let rendered = render_module(mod_documentation, FrontMatterFormat::Zola);
 
-        assert_eq!(rendered, expected_module_docs_only_name_zola_rendered());
+        assert_eq!(rendered, expected_module_docs_zola_rendered());
 
         Ok(())
     }
