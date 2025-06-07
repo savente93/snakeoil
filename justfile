@@ -75,3 +75,7 @@ pr: ci
     gh pr list --head "$(git rev-parse --abbrev-ref HEAD)" --json author --jq ". == []" | grep -q "true"
     git diff-index --quiet HEAD --
     gh pr create --web --fill-first
+
+zola:
+    cargo r -- tests/test_pkg tests/zola_test_site/content/ --format zola -e tests/test_pkg/excluded_file.py -e tests/test_pkg/excluded_module/
+    zola --root tests/zola_test_site build

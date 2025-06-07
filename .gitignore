@@ -10,3 +10,5 @@ _build/
 *.pdb
 
 .vscode
+
+tests/zola_test_site/content/*
