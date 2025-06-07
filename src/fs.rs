@@ -40,43 +40,32 @@ pub fn is_private_module(path: &Path) -> bool {
 
 pub fn get_python_prefix(rel_path: &Path) -> Result<Option<String>> {
     if let Some(file_name) = rel_path.file_name() {
-        if file_name == "__init__.py" {
-            let parent = {
-                // necessary because the parent of a relative path with only one component
-                // is Some("") and we don't want that
-                let temp = rel_path.parent().and_then(|p| p.parent());
-                if temp == Some(&PathBuf::new()) {
-                    None
-                } else {
-                    temp
-                }
-            };
-
-            if let Some(par) = parent {
-                Ok(Some(
-                    par.components()
-                        .filter_map(|comp| comp.as_os_str().to_str())
-                        .map(|s| s.to_string())
-                        .collect::<Vec<_>>()
-                        .join("."),
-                ))
+        let parent = if file_name == "__init__.py" {
+            // necessary because the parent of a relative path with only one component
+            // is Some("") and we don't want that
+            let temp = rel_path.parent().and_then(|p| p.parent());
+            if temp == Some(&PathBuf::new()) {
+                None
             } else {
-                Ok(None)
+                temp
             }
         } else {
-            let parent = rel_path.parent();
+            rel_path.parent()
+        };
 
-            if let Some(par) = parent {
-                Ok(Some(
-                    par.components()
-                        .filter_map(|comp| comp.as_os_str().to_str())
-                        .map(|s| s.to_string())
-                        .collect::<Vec<_>>()
-                        .join("."),
-                ))
-            } else {
+        if let Some(par) = parent {
+            let components = par
+                .components()
+                .filter_map(|comp| comp.as_os_str().to_str())
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>();
+            if components.is_empty() {
                 Ok(None)
+            } else {
+                Ok(Some(components.join(".")))
             }
+        } else {
+            Ok(None)
         }
     } else {
         Err(eyre!("Could not determine file name."))
@@ -254,6 +243,8 @@ pub fn walk_package(
 
     for sub_pkg in &sub_packages {
         let pkg_component_count = &sub_pkg.components().count();
+
+        // build an index that includes both the sub modules and sub packages
         let mut subs = modules
             .iter()
             .filter(|p| {

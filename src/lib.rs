@@ -24,7 +24,8 @@ pub fn render_docs(
     exclude: Vec<PathBuf>,
     format: FrontMatterFormat,
 ) -> Result<Vec<PathBuf>> {
-    let root = pkg_path.parent();
+    let root = pkg_path;
+    let root_pkg_path = get_module_name(pkg_path)?;
     let mut errored = vec![];
 
     tracing::info!("indexing package at {}", &pkg_path.display());
@@ -34,25 +35,18 @@ pub fn render_docs(
 
     for sub_pkg in pkg_index.package_paths {
         tracing::debug!("Creating directory: {}", &sub_pkg.display());
-        let rel_path = if let Some(r) = root {
-            sub_pkg.strip_prefix(r)?
-        } else {
-            &sub_pkg
-        };
-        let full_path = out_path.join(rel_path);
-        create_dir_all(&full_path)?;
+        let rel_write_path = sub_pkg.strip_prefix(root)?;
+        let full_write_path = out_path.join(rel_write_path);
+        create_dir_all(&full_write_path)?;
     }
     tracing::info!("done creating directories");
 
     for sub_module in pkg_index.module_paths {
         tracing::info!("creating documentation for {}", &sub_module.display());
-        let rel_path = if let Some(r) = root {
-            sub_module.strip_prefix(r)?
-        } else {
-            &sub_module
-        };
-        let full_path = out_path.join(rel_path);
-        let prefix = get_python_prefix(rel_path)?;
+        let rel_write_path = sub_module.strip_prefix(root)?;
+        let rel_python_path = Path::new(&root_pkg_path).join(rel_write_path);
+        let full_write_path = out_path.join(rel_write_path);
+        let prefix = get_python_prefix(&rel_python_path)?;
         let parsed = parse_python_file(&sub_module);
         match parsed {
             Ok(contents) => {
@@ -70,7 +64,7 @@ pub fn render_docs(
                         skip_undoc,
                     );
                     if sub_module.ends_with("__init__.py") {
-                        if let Some(dir) = &sub_module.parent() {
+                        if let Some(dir) = sub_module.parent() {
                             tmp_docs.with_sub_modules(
                                 pkg_index.sub_module_index.get(&dir.to_path_buf()),
                             );
@@ -80,7 +74,7 @@ pub fn render_docs(
                 };
                 tracing::debug!("rendering documentation...");
                 let rendered = render_module(documentation, format);
-                let new_path = translate_filename(&full_path);
+                let new_path = translate_filename(&full_write_path);
                 tracing::debug!("writing rendered documentation too {}", &new_path.display());
                 let mut file = File::create(new_path)?;
                 file.write_all(rendered.as_bytes())?;
