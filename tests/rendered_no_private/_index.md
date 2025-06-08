@@ -9,4 +9,3 @@ This file marks the root as a Python package.
 - [bar](bar.md)
 - [foo](foo.md)
 - [sub1](sub1/_index.md)
-- [syntax_error](syntax_error.md)
