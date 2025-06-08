@@ -7,7 +7,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 pub use crate::fs::{get_module_name, get_package_modules, walk_package};
-use crate::render::front_matter::FrontMatterFormat;
+use crate::render::formats::Renderer;
 pub use crate::render::render_module;
 
 use color_eyre::Result;
@@ -16,13 +16,13 @@ use parsing::module::extract_module_documentation;
 use parsing::utils::parse_python_file;
 use render::translate_filename;
 
-pub fn render_docs(
+pub fn render_docs<R: Renderer>(
     pkg_path: &Path,
     out_path: &Path,
     skip_private: bool,
     skip_undoc: bool,
     exclude: Vec<PathBuf>,
-    format: FrontMatterFormat,
+    renderer: &R,
 ) -> Result<Vec<PathBuf>> {
     let root = pkg_path;
     let root_pkg_path = get_module_name(pkg_path)?;
@@ -73,10 +73,13 @@ pub fn render_docs(
                     tmp_docs
                 };
                 tracing::debug!("rendering documentation...");
-                let rendered = render_module(documentation, format);
-                let new_path = translate_filename(&full_write_path);
-                tracing::debug!("writing rendered documentation too {}", &new_path.display());
-                let mut file = File::create(new_path)?;
+                let rendered = render_module(documentation, &renderer);
+                let new_write_path = translate_filename(&full_write_path);
+                tracing::debug!(
+                    "writing rendered documentation too {}",
+                    &new_write_path.display()
+                );
+                let mut file = File::create(new_write_path)?;
                 file.write_all(rendered.as_bytes())?;
             }
             Err(e) => {
@@ -98,7 +101,8 @@ mod test {
 
     use std::path::{Path, PathBuf};
 
-    use crate::render::front_matter::FrontMatterFormat;
+    use crate::render::formats::md::MdRenderer;
+
     use crate::render_docs;
 
     use pretty_assertions::assert_eq;
@@ -214,7 +218,7 @@ mod test {
                 PathBuf::from("test_pkg/excluded_file.py"),
                 PathBuf::from("test_pkg/excluded_module"),
             ],
-            FrontMatterFormat::Markdown,
+            &MdRenderer::new(),
         )?;
 
         assert_dir_trees_equal(temp_dir.path(), &expected_result_dir);
@@ -236,7 +240,7 @@ mod test {
                 PathBuf::from("test_pkg/excluded_file.py"),
                 PathBuf::from("test_pkg/excluded_module"),
             ],
-            FrontMatterFormat::Markdown,
+            &MdRenderer::new(),
         )?;
 
         assert_dir_trees_equal(temp_dir.path(), &expected_result_dir);
@@ -254,7 +258,7 @@ mod test {
             false,
             false,
             vec![],
-            FrontMatterFormat::Markdown,
+            &MdRenderer::new(),
         )?;
 
         Ok(())

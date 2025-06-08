@@ -47,7 +47,7 @@ fn test_cli_with_zola() -> Result<()> {
         .arg("test_pkg/excluded_file.py")
         .arg("--exclude")
         .arg("test_pkg/excluded_module")
-        .arg("--format")
+        .arg("--ssg")
         .arg("zola")
         .arg("-vv");
     let snakedown_assertion = cmd.assert();

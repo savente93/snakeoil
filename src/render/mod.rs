@@ -1,11 +1,13 @@
 pub mod args;
 pub mod expr;
-pub mod front_matter;
+pub mod formats;
 
+use clap::ValueEnum;
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
 };
+use strum::Display;
 
 use args::render_args;
 use expr::render_expr;
@@ -14,8 +16,14 @@ use crate::{
     parsing::{
         class::ClassDocumentation, function::FunctionDocumentation, module::ModuleDocumentation,
     },
-    render::front_matter::{FrontMatterFormat, render_front_matter},
+    render::formats::Renderer,
 };
+
+#[derive(Clone, Copy, Debug, Display, ValueEnum, PartialEq, Eq)]
+pub enum SSG {
+    Markdown,
+    Zola,
+}
 
 pub fn translate_filename(path: &Path) -> PathBuf {
     let mut translated = path.with_extension("md");
@@ -26,7 +34,7 @@ pub fn translate_filename(path: &Path) -> PathBuf {
     translated
 }
 
-pub fn render_module(mod_doc: ModuleDocumentation, format: FrontMatterFormat) -> String {
+pub fn render_module<R: Renderer>(mod_doc: ModuleDocumentation, renderer: &R) -> String {
     let mut out = String::new();
     let maybe_qualifier = match (&mod_doc.prefix, &mod_doc.name) {
         (None, None) => None,
@@ -35,7 +43,7 @@ pub fn render_module(mod_doc: ModuleDocumentation, format: FrontMatterFormat) ->
         (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
     };
 
-    let front_matter_str = render_front_matter(&maybe_qualifier, format);
+    let front_matter_str = renderer.render_front_matter(maybe_qualifier.as_deref());
     if !front_matter_str.is_empty() {
         out.push_str(&front_matter_str);
     }
@@ -54,7 +62,7 @@ pub fn render_module(mod_doc: ModuleDocumentation, format: FrontMatterFormat) ->
             (Some(pref), None) => Some(pref.clone()),
             (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
         };
-        out.push_str(render_function_docs(fn_docs, &sub_prefix, 2).trim_end());
+        out.push_str(render_function_docs(fn_docs, &sub_prefix, 2, renderer).trim_end());
         out.push('\n');
     }
 
@@ -65,16 +73,18 @@ pub fn render_module(mod_doc: ModuleDocumentation, format: FrontMatterFormat) ->
             (Some(pref), None) => Some(pref.clone()),
             (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
         };
-        out.push_str(render_class_docs(class_docs, &sub_prefix, 2).trim_end());
+
+        out.push_str(render_class_docs(class_docs, &sub_prefix, 2, &renderer).trim_end());
         out.push('\n');
     }
     out
 }
 
-fn render_class_docs(
+fn render_class_docs<R: Renderer>(
     class_docs: ClassDocumentation,
     prefix: &Option<String>,
     header_level: usize,
+    renderer: &R,
 ) -> String {
     let mut out = String::new();
     out.push('\n');
@@ -83,11 +93,8 @@ fn render_class_docs(
     } else {
         format!("{}", &class_docs.name)
     };
-    out.push_str(&"#".repeat(header_level));
-    out.push(' ');
 
-    out.push_str(&fully_qualified_class_name);
-    out.push('\n');
+    out.push_str(&renderer.render_header(&fully_qualified_class_name, header_level));
 
     if let Some(docstring) = class_docs.docstring {
         let indent = detect_docstring_indent_prefix(&docstring);
@@ -107,16 +114,19 @@ fn render_class_docs(
     };
     for fn_docs in class_docs.methods {
         out.push('\n');
-        out.push_str(render_function_docs(fn_docs, &method_prefix, header_level + 1).trim());
+        out.push_str(
+            render_function_docs(fn_docs, &method_prefix, header_level + 1, renderer).trim(),
+        );
         out.push('\n');
     }
     out
 }
 
-fn render_function_docs(
+fn render_function_docs<R: Renderer>(
     fn_docs: FunctionDocumentation,
     prefix: &Option<String>,
     header_level: usize,
+    renderer: &R,
 ) -> String {
     let mut out = String::new();
 
@@ -125,12 +135,8 @@ fn render_function_docs(
     } else {
         fn_docs.name.to_string()
     };
-    out.push_str(&"#".repeat(header_level));
-    out.push(' ');
+    out.push_str(&renderer.render_header(&fully_qualified_function_name, header_level));
 
-    out.push_str(&fully_qualified_function_name);
-
-    out.push('\n');
     out.push('\n');
     out.push_str(&fn_docs.name);
     out.push('(');
@@ -150,7 +156,6 @@ fn render_function_docs(
             .join("\n");
         out.push('\n');
         out.push_str(docstring_ident_stripped.trim());
-        out.push('\n');
     }
     out
 }
@@ -181,7 +186,10 @@ mod test {
 
     use crate::{
         parsing::{module::extract_module_documentation, utils::parse_python_str},
-        render::{front_matter::FrontMatterFormat, render_module, translate_filename},
+        render::{
+            formats::{md::MdRenderer, zola::ZolaRenderer},
+            render_module, translate_filename,
+        },
     };
     fn test_dirty_module_str() -> &'static str {
         r"'''This is a module that is used to test snakedown.'''
@@ -279,7 +287,7 @@ Callable[[], None]
             false,
         );
 
-        let rendered = render_module(mod_documentation, FrontMatterFormat::Markdown);
+        let rendered = render_module(mod_documentation, &MdRenderer::new());
 
         assert_eq!(rendered, expected_module_docs_rendered());
 
@@ -355,7 +363,7 @@ Callable[[], None]
         let parsed = parse_python_str(test_dirty_module_str())?;
         let mod_documentation = extract_module_documentation(&parsed, None, None, false, false);
 
-        let rendered = render_module(mod_documentation, FrontMatterFormat::Markdown);
+        let rendered = render_module(mod_documentation, &MdRenderer::new());
 
         assert_eq!(rendered, expected_module_docs_no_prefix_no_name_rendered());
 
@@ -372,7 +380,7 @@ Callable[[], None]
             false,
         );
 
-        let rendered = render_module(mod_documentation, FrontMatterFormat::Markdown);
+        let rendered = render_module(mod_documentation, &MdRenderer::new());
 
         assert_eq!(rendered, expected_module_docs_only_prefix_rendered());
 
@@ -457,7 +465,7 @@ Callable[[], None]
             false,
         );
 
-        let rendered = render_module(mod_documentation, FrontMatterFormat::Markdown);
+        let rendered = render_module(mod_documentation, &MdRenderer::new());
 
         assert_eq!(rendered, expected_module_docs_only_name_rendered());
 
@@ -474,7 +482,7 @@ Callable[[], None]
             false,
         );
 
-        let rendered = render_module(mod_documentation, FrontMatterFormat::Zola);
+        let rendered = render_module(mod_documentation, &ZolaRenderer::new());
 
         assert_eq!(rendered, expected_module_docs_zola_rendered());
 
