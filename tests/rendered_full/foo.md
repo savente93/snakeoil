@@ -4,11 +4,6 @@ foo.py
 
 Example module demonstrating a calculator.
 
-## Exports:
-
-- [add](#test_pkg.foo.add)
-- [multiply](#test_pkg.foo.multiply)
-
 ## test_pkg.foo.add
 
 add(a: float, b: float) -> float
