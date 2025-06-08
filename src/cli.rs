@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use clap_verbosity_flag::{LogLevel, Verbosity, VerbosityFilter};
-use snakedown::render::front_matter::FrontMatterFormat;
+use snakedown::render::SSG;
 
 #[allow(dead_code)]
 pub struct CustomLogLevel {}
@@ -52,8 +52,8 @@ pub struct Args {
     pub exclude: Vec<PathBuf>,
 
     /// What format to render the front matter in, (zola, hugo, plain markdown, etc.)
-    #[arg(short, long, value_enum, default_value_t = FrontMatterFormat::Markdown)]
-    pub format: FrontMatterFormat,
+    #[arg(short, long, value_enum, default_value_t = SSG::Markdown)]
+    pub ssg: SSG,
 }
 
 #[cfg(test)]
@@ -96,7 +96,7 @@ mod tests {
         assert!(!args.skip_undoc);
         assert!(!args.skip_private);
         assert!(args.exclude.is_empty());
-        assert_eq!(args.format, FrontMatterFormat::Markdown);
+        assert_eq!(args.ssg, SSG::Markdown);
         Ok(())
     }
 
@@ -112,7 +112,7 @@ mod tests {
             "path/to/exclude1",
             "--exclude",
             "path/to/exclude2",
-            "--format",
+            "--ssg",
             "markdown",
             "-v",
             "-v",
@@ -131,7 +131,7 @@ mod tests {
         // Verbosity should be INFO with -v -v (test indirectly)
         let level = args.verbose.log_level();
         assert_eq!(level, Some(Level::Info));
-        assert_eq!(args.format, FrontMatterFormat::Markdown);
+        assert_eq!(args.ssg, SSG::Markdown);
         Ok(())
     }
 

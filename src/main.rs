@@ -1,5 +1,11 @@
 use color_eyre::eyre::Result;
-use snakedown::render_docs;
+use snakedown::{
+    render::{
+        SSG,
+        formats::{Renderer, md::MdRenderer, zola::ZolaRenderer},
+    },
+    render_docs,
+};
 use tracing::subscriber::set_global_default;
 
 mod cli;
@@ -19,13 +25,18 @@ async fn main() -> Result<()> {
 
     set_global_default(subscriber)?;
 
+    let renderer: Box<dyn Renderer> = match args.ssg {
+        SSG::Markdown => Box::new(MdRenderer::new()),
+        SSG::Zola => Box::new(ZolaRenderer::new()),
+    };
+
     render_docs(
         &args.pkg_path,
         &args.output_dir,
         args.skip_private,
         args.skip_undoc,
         args.exclude,
-        args.format,
+        &renderer,
     )?;
 
     Ok(())
