@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+## [0.1.1](https://github.com/savente93/snakedown/compare/v0.1.0...v0.1.1) - 2025-06-12
+
+### Other
+
+- add badges to readme
+
 
 ### ✨ Features
 
