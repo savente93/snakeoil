@@ -2,6 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![codecov](https://codecov.io/gh/savente93/SnakeDown/branch/main/graph/badge.svg)](https://codecov.io/gh/savente93/SnakeDown)
+[![crates.io](https://img.shields.io/crates/v/snakedown)](https://crates.io/crates/snakedown)
+[![Docs.rs](https://docs.rs/snakedown/badge.svg)](https://docs.rs/snakedown)
 
 
 A Python API extractor written in Rust. I got frustrated with the standard tools used for documentation generation used in Python, namely that all of the ones I've worked with have at least one of the following to characteristics:
