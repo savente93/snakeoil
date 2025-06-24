@@ -85,6 +85,7 @@ mod test {
         SphinxInvVersion, decompress_remaining_zlib_data, parse_inv_version,
         parse_sphinx_inv_header,
     };
+    use crate::parsing::sphinx::types::ExternalSphinxRef;
 
     fn write_test_header(header: &str) -> Result<(TempDir, PathBuf)> {
         let temp_dir = TempDir::new()?;
@@ -191,10 +192,9 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::expect_used)]
     fn load_numpy_file() -> Result<()> {
         let filename = "tests/sphinx_objects/numpy.inv";
-        let file = File::open(filename).expect("could not load file");
+        let file = File::open(filename)?;
         let mut reader = BufReader::new(&file);
 
         let (inv_ver, proj_name, proj_ver) = parse_sphinx_inv_header(&mut reader)?;
@@ -202,7 +202,16 @@ mod test {
         assert_eq!(proj_name, "NumPy".to_string());
         assert_eq!(proj_ver, "2.3".to_string());
 
-        let _decompressed = decompress_remaining_zlib_data(&mut reader)?;
+        let decompressed = decompress_remaining_zlib_data(&mut reader)?;
+
+        let mut f = File::create("full_example.inv")?;
+
+        f.write_all(decompressed.as_bytes())?;
+
+        for line in decompressed.lines() {
+            let sphinx_ref = ExternalSphinxRef::try_from(line);
+            assert!(sphinx_ref.is_ok(), "failed to parse line: {}", line);
+        }
 
         Ok(())
     }
