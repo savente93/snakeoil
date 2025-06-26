@@ -1,0 +1,93 @@
+NpyIter_GetIterIndex.iter c:functionParam 1 reference/c-api/iterator.html#c.NpyIter_GetIterIndex -
+NpyIter_GetIterIndexRange c:function 1 reference/c-api/iterator.html#c.$ -
+NpyIter_GetIterIndexRange.iend c:functionParam 1 reference/c-api/iterator.html#c.NpyIter_GetIterIndexRange -
+numpy.ndarray.__imul__ py:method 1 reference/generated/numpy.ndarray.__imul__.html#$ -
+PyArrayMethod_Spec
+arraymethod-typedefs std:label -1 reference/c-api/array.html#$ Slots and Typedefs
+arrays std:label -1 reference/arrays.html#$ Array objects
+arrays.broadcasting.broadcastable std:label -1 user/basics.broadcasting.html#arrays-broadcasting-broadcastable Broadcastable arrays
+arrays.classes std:label -1 reference/arrays.classes.html#arrays-classes Standard array subclasses
+arrays.classes.rec std:label -1 reference/arrays.classes.html#arrays-classes-rec Record arrays
+ra35a579c0a2d-2 std:label -1 reference/random/generated/numpy.random.Generator.wald.html#$ -
+ra35a579c0a2d-3 std:label -1 reference/random/generated/numpy.random.Generator.wald.html#$ -
+ra43e662d710b-1 std:label -1 reference/generated/numpy.linalg.matrix_rank.html#$ -
+ra43e662d710b-2 std:label -1 reference/generated/numpy.linalg.matrix_rank.html#$ -
+ra4860a90e397-1 std:label -1 reference/random/generated/numpy.random.noncentral_chisquare.html#$ -
+ra6e7851edd91-1 std:label -1 reference/random/generated/numpy.random.gumbel.html#$ -
+ra6e7851edd91-2 std:label -1 reference/random/generated/numpy.random.gumbel.html#$ -
+ra77551488c27-1 std:label -1 reference/random/generated/numpy.random.RandomState.gamma.html#$ -
+ra77551488c27-2 std:label -1 reference/random/generated/numpy.random.RandomState.gamma.html#$ -
+rabc5c9a1e873-1 std:label -1 reference/generated/numpy.kaiser.html#$ -
+rabc5c9a1e873-2 std:label -1 reference/generated/numpy.kaiser.html#$ -
+rabc5c9a1e873-3 std:label -1 reference/generated/numpy.kaiser.html#$ -
+rac1c834adb66-1 std:label -1 reference/generated/numpy.linalg.norm.html#$ -
+rad26d0f7d970-1 std:label -1 reference/random/bit_generators/pcg64dxsm.html#$ -
+rad26d0f7d970-2 std:label -1 reference/random/bit_generators/pcg64dxsm.html#$ -
+random-bit-generators std:label -1 reference/random/bit_generators/index.html#$ Bit generators
+random-compatibility std:label -1 reference/random/compatibility.html#$ Compatibility policy
+random-quick-start std:label -1 reference/random/index.html#$ Quick start
+random_cython std:label -1 reference/random/extending.html#random-cython Cython
+ravel std:term -1 glossary.html#term-$ -
+rb1ec5a35220a-1 std:label -1 reference/random/generated/numpy.random.RandomState.noncentral_chisquare.html#$ -
+rb5c734d6c459-1 std:label -1 reference/generated/numpy.bitwise_count.html#$ -
+eference/c-api/coremath std:doc -1 reference/c-api/coremath.html NumPy core math library
+reference/c-api/data_memory std:doc -1 reference/c-api/data_memory.html Memory management in NumPy
+reference/distutils_guide std:doc -1 reference/distutils_guide.html numpy.distutils user guide
+reference/distutils_status_migration std:doc -1 reference/distutils_status_migration.html Status of numpy.distutils and migration advice
+reference/generated/numpy.allclose std:doc -1 reference/generated/numpy.allclose.html numpy.allclose
+onjugate.html numpy.char.chararray.conjugate
+reference/generated/numpy.char.chararray.copy std:doc -1 reference/generated/numpy.char.chararray.copy.html numpy.char.chararray.copy
+reference/generated/numpy.char.chararray.count std:doc -1 reference/generated/numpy.char.chararray.count.html numpy.char.chararray.count
+reference/generated/numpy.char.chararray.ctypes std:doc -1 reference/generated/numpy.char.chararray.ctypes.html numpy.char.chararray.ctypes
+underthehood std:label -1 dev/underthehood.html#$ Under-the-hood documentation for developers
+upgrading-pcg64 std:label -1 reference/random/upgrading-pcg64.html#$ Upgrading PCG64 with PCG64DXSM
+upgrading-pcg64-details std:label -1 reference/random/upgrading-pcg64.html#$ Technical details
+use-of-internal-buffers std:label -1 user/basics.ufuncs.html#$ Use of internal buffers
+user std:label -1 user/index.html#$ NumPy user guide
+user.user-defined-data-types std:label -1 user/c-info.beyond-basics.html#user-user-defined-data-types User-defined data-types
+user/absolute_beginners std:doc -1 user/absolute_beginners.html NumPy: the absolute basics for beginners
+user/basics std:doc -1 user/basics.html NumPy fundamentals
+user/basics.broadcasting std:doc -1 user/basics.broadcasting.html Broadcasting
+user/basics.copies std:doc -1 user/basics.copies.html Copies and views
+user/basics.creation std:doc -1 user/basics.creation.html Array creation
+user/basics.dispatch std:doc -1 user/basics.dispatch.html Writing custom array containers
+user/basics.indexing std:doc -1 user/basics.indexing.html Indexing on ndarrays
+user/basics.interoperability std:doc -1 user/basics.interoperability.html Interoperability with NumPy
+user/basics.io std:doc -1 user/basics.io.html I/O with NumPy
+user/basics.io.genfromtxt std:doc -1 user/basics.io.genfromtxt.html Importing data with genfromtxt
+user/basics.rec std:doc -1 user/basics.rec.html Structured arrays
+user/basics.strings std:doc -1 user/basics.strings.html Working with Arrays of Strings And Bytes
+user/basics.subclassing std:doc -1 user/basics.subclassing.html Subclassing ndarray
+user/basics.types std:doc -1 user/basics.types.html Data types
+user/basics.ufuncs std:doc -1 user/basics.ufuncs.html Universal functions (ufunc) basics
+user/byteswapping std:doc -1 user/byteswapping.html Byte-swapping
+user/c-info std:doc -1 user/c-info.html Using NumPy C-API
+user/c-info.beyond-basics std:doc -1 user/c-info.beyond-basics.html Beyond the basics
+user/c-info.how-to-extend std:doc -1 user/c-info.how-to-extend.html How to extend NumPy
+user/c-info.python-as-glue std:doc -1 user/c-info.python-as-glue.html Using Python as glue
+user/c-info.ufunc-tutorial std:doc -1 user/c-info.ufunc-tutorial.html Writing your own ufunc
+user/how-to-how-to std:doc -1 user/how-to-how-to.html How to write a NumPy how-to
+user/how-to-index std:doc -1 user/how-to-index.html How to index ndarrays
+user/how-to-io std:doc -1 user/how-to-io.html Reading and writing files
+user/how-to-partition std:doc -1 user/how-to-partition.html How to create arrays with regularly-spaced values
+user/how-to-verify-bug std:doc -1 user/how-to-verify-bug.html Verifying bugs and bug fixes in NumPy
+user/howtos_index std:doc -1 user/howtos_index.html NumPy how-tos
+user/index std:doc -1 user/index.html NumPy user guide
+user/install std:doc -1 user/install.html Installing NumPy
+user/misc std:doc -1 user/misc.html Miscellaneous
+user/numpy-for-matlab-users std:doc -1 user/numpy-for-matlab-users.html NumPy for MATLAB users
+user/quickstart std:doc -1 user/quickstart.html NumPy quickstart
+user/theory.broadcasting std:doc -1 user/theory.broadcasting.html Array broadcasting in Numpy
+user/troubleshooting-importerror std:doc -1 user/troubleshooting-importerror.html Troubleshooting
+user/whatisnumpy std:doc -1 user/whatisnumpy.html What is NumPy?
+userdoc_guide std:label -1 dev/howto-docs.html#userdoc-guide User documentation
+vectorization std:term -1 glossary.html#term-$ -
+view std:label -1 user/basics.copies.html#$ View
+view std:term -1 glossary.html#term-$ -
+view-casting std:label -1 user/basics.subclassing.html#$ View casting
+whatis-vectorization std:label -1 user/whatisnumpy.html#$ Why is NumPy fast?
+whatisnumpy std:label -1 user/whatisnumpy.html#$ What is NumPy?
+workflow_mailing_list std:label -1 dev/development_workflow.html#workflow-mailing-list Get the mailing list’s opinion
+workflow_pr_timeline std:label -1 dev/development_workflow.html#workflow-pr-timeline Getting your PR reviewed
+writing-an-extension std:label -1 user/c-info.how-to-extend.html#$ Writing an extension module
+writing-the-commit-message std:label -1 dev/development_workflow.html#$ Writing the commit message

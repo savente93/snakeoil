@@ -1,4 +1,5 @@
 pub mod fs;
+pub mod indexing;
 pub mod parsing;
 pub mod render;
 
