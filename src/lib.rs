@@ -1,4 +1,5 @@
 pub mod fs;
+pub mod indexing;
 pub mod parsing;
 pub mod render;
 
@@ -118,7 +119,7 @@ mod test {
     pub fn assert_dir_trees_equal<P: AsRef<Path>>(dir1: P, dir2: P) {
         match compare_dirs(dir1.as_ref(), dir2.as_ref()) {
             Ok(_) => (),
-            Err(e) => panic!("Directory trees differ:\n{}", e),
+            Err(e) => panic!("Directory trees differ:\n{e}"),
         }
     }
 
@@ -138,11 +139,11 @@ mod test {
         let in_both = paths1.intersection(&paths2);
 
         for path in only_in_1 {
-            errors.push(format!("Only in {:?}: {:?}", dir1, path));
+            errors.push(format!("Only in {dir1:?}: {path:?}"));
         }
 
         for path in only_in_2 {
-            errors.push(format!("Only in {:?}: {:?}", dir2, path));
+            errors.push(format!("Only in {dir2:?}: {path:?}"));
         }
 
         for path in in_both {
@@ -155,12 +156,12 @@ mod test {
             match (meta1.is_file(), meta2.is_file()) {
                 (true, true) => {
                     if let Err(e) = compare_files(full1, full2) {
-                        errors.push(format!("Content differs at {:?}: {}", path, e));
+                        errors.push(format!("Content differs at {path:?}: {e}"));
                     }
                 }
                 (false, false) => {} // Both are directories, skip
                 _ => {
-                    errors.push(format!("Type mismatch at {:?}: file vs directory", path));
+                    errors.push(format!("Type mismatch at {path:?}: file vs directory"));
                 }
             }
         }
