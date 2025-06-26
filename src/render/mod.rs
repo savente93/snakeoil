@@ -40,7 +40,7 @@ pub fn render_module<R: Renderer>(mod_doc: ModuleDocumentation, renderer: &R) ->
         (None, None) => None,
         (None, Some(name)) => Some(name.to_string()),
         (Some(pref), None) => Some(pref.to_string()),
-        (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
+        (Some(pref), Some(name)) => Some(format!("{pref}.{name}")),
     };
 
     let front_matter_str = renderer.render_front_matter(maybe_qualifier.as_deref());
@@ -60,7 +60,7 @@ pub fn render_module<R: Renderer>(mod_doc: ModuleDocumentation, renderer: &R) ->
             (None, None) => None,
             (None, Some(name)) => Some(name.clone()),
             (Some(pref), None) => Some(pref.clone()),
-            (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
+            (Some(pref), Some(name)) => Some(format!("{pref}.{name}")),
         };
         out.push_str(render_function_docs(fn_docs, &sub_prefix, 2, renderer).trim_end());
         out.push('\n');
@@ -71,7 +71,7 @@ pub fn render_module<R: Renderer>(mod_doc: ModuleDocumentation, renderer: &R) ->
             (None, None) => None,
             (None, Some(name)) => Some(name.clone()),
             (Some(pref), None) => Some(pref.clone()),
-            (Some(pref), Some(name)) => Some(format!("{}.{}", pref, name)),
+            (Some(pref), Some(name)) => Some(format!("{pref}.{name}")),
         };
 
         out.push_str(render_class_docs(class_docs, &sub_prefix, 2, &renderer).trim_end());

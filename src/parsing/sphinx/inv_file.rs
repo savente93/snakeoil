@@ -1,6 +1,13 @@
 use color_eyre::{Result, eyre::eyre};
 use flate2::bufread::ZlibDecoder;
-use std::io::{BufRead, BufReader, Read};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader, Read},
+    path::Path,
+};
+use tracing::error;
+
+use crate::parsing::sphinx::types::ExternalSphinxRef;
 
 #[derive(Debug, PartialEq)]
 pub enum SphinxInvVersion {
@@ -73,6 +80,27 @@ fn decompress_remaining_zlib_data<R: Read>(reader: &mut BufReader<R>) -> Result<
     Ok(decompressed_text)
 }
 
+pub fn parse_objects_inv<R: Read>(mut reader: BufReader<R>) -> Result<Vec<ExternalSphinxRef>> {
+    let mut references = vec![];
+    let (_inv_ver, _proj_name, _proj_ver) = parse_sphinx_inv_header(&mut reader)?;
+
+    let decompressed = decompress_remaining_zlib_data(&mut reader)?;
+
+    for line in decompressed.lines() {
+        match ExternalSphinxRef::try_from(line) {
+            Ok(sr) => references.push(sr),
+            Err(e) => error!("Error {} occurred while parsing line: {}", e, line),
+        }
+    }
+    Ok(references)
+}
+
+pub fn parse_objects_inv_file(path: &Path) -> Result<Vec<ExternalSphinxRef>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(&file);
+    parse_objects_inv(reader)
+}
+
 #[cfg(test)]
 mod test {
     use assert_fs::TempDir;
@@ -83,7 +111,7 @@ mod test {
 
     use crate::parsing::sphinx::inv_file::{
         SphinxInvVersion, decompress_remaining_zlib_data, parse_inv_version,
-        parse_sphinx_inv_header,
+        parse_objects_inv_file, parse_sphinx_inv_header,
     };
     use crate::parsing::sphinx::types::ExternalSphinxRef;
 
@@ -192,7 +220,7 @@ mod test {
     }
 
     #[test]
-    fn load_numpy_file() -> Result<()> {
+    fn load_numpy_file_manually() -> Result<()> {
         let filename = "tests/sphinx_objects/numpy.inv";
         let file = File::open(filename)?;
         let mut reader = BufReader::new(&file);
@@ -210,8 +238,16 @@ mod test {
 
         for line in decompressed.lines() {
             let sphinx_ref = ExternalSphinxRef::try_from(line);
-            assert!(sphinx_ref.is_ok(), "failed to parse line: {}", line);
+            assert!(sphinx_ref.is_ok(), "failed to parse line: {line}");
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn load_numpy_file_pub_func() -> Result<()> {
+        let filename = PathBuf::from("tests/sphinx_objects/numpy.inv");
+        let _ = parse_objects_inv_file(&filename)?;
 
         Ok(())
     }

@@ -26,7 +26,7 @@ impl Renderer for ZolaRenderer {
         let mut out = String::new();
         out.push_str("+++\n");
         if let Some(t) = title {
-            out.push_str(&format!("title = \"{}\"\n", t));
+            out.push_str(&format!("title = \"{t}\"\n"));
         };
         out.push_str("+++\n");
         out
