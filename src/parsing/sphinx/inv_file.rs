@@ -232,10 +232,6 @@ mod test {
 
         let decompressed = decompress_remaining_zlib_data(&mut reader)?;
 
-        let mut f = File::create("full_example.inv")?;
-
-        f.write_all(decompressed.as_bytes())?;
-
         for line in decompressed.lines() {
             let sphinx_ref = ExternalSphinxRef::try_from(line);
             assert!(sphinx_ref.is_ok(), "failed to parse line: {line}");
