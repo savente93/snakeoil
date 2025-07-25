@@ -51,19 +51,17 @@ impl ConfigBuilder {
         self.skip_private = Some(skip_private);
         self
     }
-    pub fn exclude_paths(mut self, excluded: Vec<PathBuf>) -> Self {
+    pub fn exclude_paths(&mut self, excluded: Vec<PathBuf>) {
         match &mut self.exclude {
             Some(v) => v.extend(excluded),
             None => self.exclude = Some(excluded),
         }
-        self
     }
-    pub fn exclude_path(mut self, excluded: PathBuf) -> Self {
+    pub fn exclude_path(&mut self, excluded: PathBuf) {
         match &mut self.exclude {
             Some(v) => v.push(excluded),
             None => self.exclude = Some(vec![excluded]),
         }
-        self
     }
     pub fn with_exclude(mut self, exclude: Vec<PathBuf>) -> Self {
         self.exclude = Some(exclude);
@@ -92,6 +90,37 @@ impl ConfigBuilder {
         Ok(())
     }
 
+    pub fn merge(mut self, other: ConfigBuilder) -> Self {
+        if other.minify.is_some() {
+            self.minify = other.minify;
+        }
+        if other.output_dir.is_some() {
+            self.output_dir = other.output_dir;
+        }
+
+        if other.pkg_path.is_some() {
+            self.pkg_path = other.pkg_path;
+        }
+
+        if other.skip_undoc.is_some() {
+            self.skip_undoc = other.skip_undoc
+        }
+
+        if other.skip_private.is_some() {
+            self.skip_private = other.skip_private
+        }
+
+        if other.ssg.is_some() {
+            self.ssg = other.ssg
+        }
+
+        if let Some(v) = other.exclude {
+            self.exclude_paths(v)
+        }
+
+        self
+    }
+
     pub fn from_path(path: &Path) -> Result<ConfigBuilder> {
         let mut file_contents = String::new();
         let mut file = File::open(path)?;
@@ -103,6 +132,10 @@ impl ConfigBuilder {
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
+    use crate::render::SSG;
+
     use super::ConfigBuilder;
     use assert_fs::TempDir;
     use color_eyre::Result;
@@ -116,16 +149,60 @@ mod test {
 
     #[test]
     fn config_round_trip() -> Result<()> {
-        let builder = ConfigBuilder::default()
+        let mut builder = ConfigBuilder::default()
             .with_minify(true)
             .with_skip_undoc(false)
             .with_skip_private(true);
+
+        builder.exclude_paths(vec![PathBuf::from("asdf")]);
 
         let tmp_dir = TempDir::new()?;
         let path = tmp_dir.join("build_config.toml");
         builder.to_file(&path)?;
         let deserialized = ConfigBuilder::from_path(&path)?;
         assert_eq!(builder, deserialized);
+        Ok(())
+    }
+
+    #[test]
+    fn config_merge_other_takes_precident() -> Result<()> {
+        let mut first = ConfigBuilder::default()
+            .with_pkg_path(PathBuf::from("."))
+            .with_ssg(SSG::Markdown);
+
+        first.exclude_path(PathBuf::from("asdf"));
+
+        let second = ConfigBuilder::default()
+            .with_pkg_path(PathBuf::from("content"))
+            .with_skip_undoc(true)
+            .with_exclude(vec![PathBuf::from("zxcv")]);
+
+        let third = ConfigBuilder::default()
+            .with_minify(false)
+            .with_output_dir(PathBuf::from("_output"))
+            .with_skip_private(false)
+            .with_pkg_path(PathBuf::from("pkg"))
+            .with_exclude(vec![PathBuf::from("qwert")])
+            .with_ssg(SSG::Zola);
+
+        let expected = ConfigBuilder::default()
+            .with_pkg_path(PathBuf::from("pkg"))
+            .with_output_dir(PathBuf::from("_output"))
+            .with_skip_undoc(true)
+            .with_minify(false)
+            .with_skip_undoc(true)
+            .with_skip_private(false)
+            .with_exclude(vec![
+                PathBuf::from("asdf"),
+                PathBuf::from("zxcv"),
+                PathBuf::from("qwert"),
+            ])
+            .with_skip_undoc(true)
+            .with_ssg(SSG::Zola);
+
+        let computed = first.merge(second).merge(third);
+        assert_eq!(expected, computed);
+
         Ok(())
     }
 }
