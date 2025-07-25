@@ -3,6 +3,7 @@ pub mod expr;
 pub mod formats;
 
 use clap::ValueEnum;
+use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
@@ -19,7 +20,7 @@ use crate::{
     render::formats::Renderer,
 };
 
-#[derive(Clone, Copy, Debug, Display, ValueEnum, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Display, ValueEnum, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SSG {
     Markdown,
     Zola,
