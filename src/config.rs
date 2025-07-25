@@ -6,22 +6,22 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::render::SSG;
+use crate::render::{
+    SSG,
+    formats::{Renderer, md::MdRenderer, zola::ZolaRenderer},
+};
 
-#[derive(Debug, PartialEq, Eq)]
 pub struct Config {
-    pub minify: bool,
     pub output_dir: PathBuf,
     pub pkg_path: PathBuf,
     pub skip_undoc: bool,
     pub skip_private: bool,
     pub exclude: Vec<PathBuf>,
-    pub ssg: SSG,
+    pub renderer: Box<dyn Renderer>,
 }
 
 #[derive(Default, Serialize, Deserialize, PartialEq, Eq, Debug)]
 pub struct ConfigBuilder {
-    minify: Option<bool>,
     output_dir: Option<PathBuf>,
     pkg_path: Option<PathBuf>,
     skip_undoc: Option<bool>,
@@ -31,24 +31,28 @@ pub struct ConfigBuilder {
 }
 
 impl ConfigBuilder {
-    pub fn with_minify(mut self, minify: bool) -> Self {
-        self.minify = Some(minify);
+    pub fn with_output_dir(mut self, output_dir: Option<PathBuf>) -> Self {
+        if output_dir.is_some() {
+            self.output_dir = output_dir;
+        }
         self
     }
-    pub fn with_output_dir(mut self, output_dir: PathBuf) -> Self {
-        self.output_dir = Some(output_dir);
+    pub fn with_pkg_path(mut self, pkg_path: Option<PathBuf>) -> Self {
+        if pkg_path.is_some() {
+            self.pkg_path = pkg_path;
+        }
         self
     }
-    pub fn with_pkg_path(mut self, pkg_path: PathBuf) -> Self {
-        self.pkg_path = Some(pkg_path);
+    pub fn with_skip_undoc(mut self, skip_undoc: Option<bool>) -> Self {
+        if skip_undoc.is_some() {
+            self.skip_undoc = skip_undoc;
+        }
         self
     }
-    pub fn with_skip_undoc(mut self, skip_undoc: bool) -> Self {
-        self.skip_undoc = Some(skip_undoc);
-        self
-    }
-    pub fn with_skip_private(mut self, skip_private: bool) -> Self {
-        self.skip_private = Some(skip_private);
+    pub fn with_skip_private(mut self, skip_private: Option<bool>) -> Self {
+        if skip_private.is_some() {
+            self.skip_private = skip_private;
+        }
         self
     }
     pub fn exclude_paths(&mut self, excluded: Vec<PathBuf>) {
@@ -63,23 +67,31 @@ impl ConfigBuilder {
             None => self.exclude = Some(vec![excluded]),
         }
     }
-    pub fn with_exclude(mut self, exclude: Vec<PathBuf>) -> Self {
-        self.exclude = Some(exclude);
+    pub fn with_exclude(mut self, exclude: Option<Vec<PathBuf>>) -> Self {
+        if exclude.is_some() {
+            self.exclude = exclude;
+        }
         self
     }
-    pub fn with_ssg(mut self, ssg: SSG) -> Self {
-        self.ssg = Some(ssg);
+    pub fn with_ssg(mut self, ssg: Option<SSG>) -> Self {
+        if ssg.is_some() {
+            self.ssg = ssg;
+        }
         self
     }
     pub fn build(self) -> Result<Config> {
+        let renderer: Box<dyn Renderer> = match self.ssg {
+            Some(SSG::Markdown) | None => Box::new(MdRenderer::new()),
+            Some(SSG::Zola) => Box::new(ZolaRenderer::new()),
+        };
+
         Ok(Config {
-            minify: self.minify.unwrap_or(false),
             output_dir: self.output_dir.unwrap_or(PathBuf::from("_build")),
             pkg_path: self.pkg_path.unwrap_or(PathBuf::from(".")),
             skip_undoc: self.skip_undoc.unwrap_or(true),
             skip_private: self.skip_private.unwrap_or(false),
             exclude: self.exclude.unwrap_or_default(),
-            ssg: self.ssg.unwrap_or(SSG::Markdown),
+            renderer,
         })
     }
 
@@ -91,9 +103,6 @@ impl ConfigBuilder {
     }
 
     pub fn merge(mut self, other: ConfigBuilder) -> Self {
-        if other.minify.is_some() {
-            self.minify = other.minify;
-        }
         if other.output_dir.is_some() {
             self.output_dir = other.output_dir;
         }
@@ -150,9 +159,8 @@ mod test {
     #[test]
     fn config_round_trip() -> Result<()> {
         let mut builder = ConfigBuilder::default()
-            .with_minify(true)
-            .with_skip_undoc(false)
-            .with_skip_private(true);
+            .with_skip_undoc(Some(false))
+            .with_skip_private(Some(true));
 
         builder.exclude_paths(vec![PathBuf::from("asdf")]);
 
@@ -167,38 +175,36 @@ mod test {
     #[test]
     fn config_merge_other_takes_precident() -> Result<()> {
         let mut first = ConfigBuilder::default()
-            .with_pkg_path(PathBuf::from("."))
-            .with_ssg(SSG::Markdown);
+            .with_pkg_path(Some(PathBuf::from(".")))
+            .with_ssg(Some(SSG::Markdown));
 
         first.exclude_path(PathBuf::from("asdf"));
 
         let second = ConfigBuilder::default()
-            .with_pkg_path(PathBuf::from("content"))
-            .with_skip_undoc(true)
-            .with_exclude(vec![PathBuf::from("zxcv")]);
+            .with_pkg_path(Some(PathBuf::from("content")))
+            .with_skip_undoc(Some(true))
+            .with_exclude(Some(vec![PathBuf::from("zxcv")]));
 
         let third = ConfigBuilder::default()
-            .with_minify(false)
-            .with_output_dir(PathBuf::from("_output"))
-            .with_skip_private(false)
-            .with_pkg_path(PathBuf::from("pkg"))
-            .with_exclude(vec![PathBuf::from("qwert")])
-            .with_ssg(SSG::Zola);
+            .with_output_dir(Some(PathBuf::from("_output")))
+            .with_skip_private(Some(false))
+            .with_pkg_path(Some(PathBuf::from("pkg")))
+            .with_exclude(Some(vec![PathBuf::from("qwert")]))
+            .with_ssg(Some(SSG::Zola));
 
         let expected = ConfigBuilder::default()
-            .with_pkg_path(PathBuf::from("pkg"))
-            .with_output_dir(PathBuf::from("_output"))
-            .with_skip_undoc(true)
-            .with_minify(false)
-            .with_skip_undoc(true)
-            .with_skip_private(false)
-            .with_exclude(vec![
+            .with_pkg_path(Some(PathBuf::from("pkg")))
+            .with_output_dir(Some(PathBuf::from("_output")))
+            .with_skip_undoc(Some(true))
+            .with_skip_undoc(Some(true))
+            .with_skip_private(Some(false))
+            .with_exclude(Some(vec![
                 PathBuf::from("asdf"),
                 PathBuf::from("zxcv"),
                 PathBuf::from("qwert"),
-            ])
-            .with_skip_undoc(true)
-            .with_ssg(SSG::Zola);
+            ]))
+            .with_skip_undoc(Some(true))
+            .with_ssg(Some(SSG::Zola));
 
         let computed = first.merge(second).merge(third);
         assert_eq!(expected, computed);
